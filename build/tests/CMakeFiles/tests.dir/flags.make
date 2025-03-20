@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/usr/include/eigen3 -I/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/include -isystem /usr/include/SDL2
+CXX_INCLUDES = 
 
 CXX_FLAGS = -std=gnu++17 -DGTEST_HAS_PTHREAD=1
 

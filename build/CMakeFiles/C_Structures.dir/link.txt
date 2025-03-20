@@ -1,1 +1,1 @@
-/usr/bin/c++ CMakeFiles/C_Structures.dir/src/main.cpp.o -o C_Structures  /usr/lib/x86_64-linux-gnu/libSDL2.so /usr/lib/x86_64-linux-gnu/libGLEW.so /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so 
+/usr/bin/c++ CMakeFiles/C_Structures.dir/src/main.cpp.o -o C_Structures  /usr/lib/x86_64-linux-gnu/libSDL2.so /usr/lib/x86_64-linux-gnu/libGLEW.so /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so /usr/lib/x86_64-linux-gnu/libgtest.a 

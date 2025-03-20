@@ -10,23 +10,36 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeLists.txt"
   "CMakeFiles/3.28.3/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.28.3/CMakeSystem.cmake"
+  "/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/tests/CMakeLists.txt"
+  "/usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfig.cmake"
+  "/usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfigVersion.cmake"
+  "/usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets-none.cmake"
+  "/usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets.cmake"
   "/usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config-version.cmake"
   "/usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeCXXInformation.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake"
+  "/usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeGenericSystem.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake"
+  "/usr/share/cmake-3.28/Modules/CheckCXXSourceCompiles.cmake"
+  "/usr/share/cmake-3.28/Modules/CheckIncludeFileCXX.cmake"
+  "/usr/share/cmake-3.28/Modules/CheckLibraryExists.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/GNU.cmake"
   "/usr/share/cmake-3.28/Modules/FeatureSummary.cmake"
   "/usr/share/cmake-3.28/Modules/FindGLEW.cmake"
+  "/usr/share/cmake-3.28/Modules/FindGTest.cmake"
   "/usr/share/cmake-3.28/Modules/FindOpenGL.cmake"
   "/usr/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake"
   "/usr/share/cmake-3.28/Modules/FindPackageMessage.cmake"
+  "/usr/share/cmake-3.28/Modules/FindThreads.cmake"
+  "/usr/share/cmake-3.28/Modules/GoogleTest.cmake"
+  "/usr/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/Linux-GNU-CXX.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/Linux-GNU.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/Linux-Initialize.cmake"
@@ -49,9 +62,11 @@ set(CMAKE_MAKEFILE_OUTPUTS
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/CMakeDirectoryInformation.cmake"
+  "tests/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/C_Structures.dir/DependInfo.cmake"
+  "tests/CMakeFiles/tests.dir/DependInfo.cmake"
   )

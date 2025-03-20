@@ -97,14 +97,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build//CMakeFiles/progress.marks
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/tests//CMakeFiles/progress.marks
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 clean
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/clean
 .PHONY : clean
 
 # The main clean target
@@ -113,68 +113,56 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 preinstall
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-#=============================================================================
-# Target rules for targets named C_Structures
+# Convenience name for target.
+tests/CMakeFiles/tests.dir/rule:
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/tests.dir/rule
+.PHONY : tests/CMakeFiles/tests.dir/rule
 
-# Build rule for target.
-C_Structures: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 C_Structures
-.PHONY : C_Structures
-
-# fast build rule for target.
-C_Structures/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/build
-.PHONY : C_Structures/fast
-
-#=============================================================================
-# Target rules for targets named tests
-
-# Build rule for target.
-tests: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests
+# Convenience name for target.
+tests: tests/CMakeFiles/tests.dir/rule
 .PHONY : tests
 
 # fast build rule for target.
 tests/fast:
-	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/tests.dir/build.make tests/CMakeFiles/tests.dir/build
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/tests.dir/build.make tests/CMakeFiles/tests.dir/build
 .PHONY : tests/fast
 
-src/main.o: src/main.cpp.o
-.PHONY : src/main.o
+test_main.o: test_main.cpp.o
+.PHONY : test_main.o
 
 # target to build an object file
-src/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/main.cpp.o
-.PHONY : src/main.cpp.o
+test_main.cpp.o:
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/tests.dir/build.make tests/CMakeFiles/tests.dir/test_main.cpp.o
+.PHONY : test_main.cpp.o
 
-src/main.i: src/main.cpp.i
-.PHONY : src/main.i
+test_main.i: test_main.cpp.i
+.PHONY : test_main.i
 
 # target to preprocess a source file
-src/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/main.cpp.i
-.PHONY : src/main.cpp.i
+test_main.cpp.i:
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/tests.dir/build.make tests/CMakeFiles/tests.dir/test_main.cpp.i
+.PHONY : test_main.cpp.i
 
-src/main.s: src/main.cpp.s
-.PHONY : src/main.s
+test_main.s: test_main.cpp.s
+.PHONY : test_main.s
 
 # target to generate assembly for a file
-src/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/main.cpp.s
-.PHONY : src/main.cpp.s
+test_main.cpp.s:
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(MAKE) $(MAKESILENT) -f tests/CMakeFiles/tests.dir/build.make tests/CMakeFiles/tests.dir/test_main.cpp.s
+.PHONY : test_main.cpp.s
 
 # Help Target
 help:
@@ -185,11 +173,10 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... test"
-	@echo "... C_Structures"
 	@echo "... tests"
-	@echo "... src/main.o"
-	@echo "... src/main.i"
-	@echo "... src/main.s"
+	@echo "... test_main.o"
+	@echo "... test_main.i"
+	@echo "... test_main.s"
 .PHONY : help
 
 
@@ -201,6 +188,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

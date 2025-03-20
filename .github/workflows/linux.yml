@@ -1,0 +1,28 @@
+name: Linux CI
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libsdl2-dev \
+            libeigen3-dev \
+            libglm-dev \
+            libglew-dev \
+            libgl1-mesa-dev
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release -- -j4
+
+      - name: Run Tests (Placeholder)
+        run: |
+          cd build
+          ctest --output-on-failure
