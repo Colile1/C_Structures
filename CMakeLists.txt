@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 3.12)
 project(C_Structures LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 17)
 
-# Include Eigen and GLM (header-only)
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Find dependencies
 find_package(Eigen3 REQUIRED)
 find_package(glm REQUIRED)
-
-# SDL2 and OpenGL
 find_package(SDL2 REQUIRED)
 find_package(OpenGL REQUIRED)
-
-# GLEW (for OpenGL extensions)
 find_package(GLEW REQUIRED)
+find_package(GTest REQUIRED)
 
 # Add executable
 add_executable(C_Structures
@@ -19,27 +19,41 @@ add_executable(C_Structures
   src/model/Node.cpp
   src/model/Beam.cpp
   src/data/CSVHandler.cpp
-  # Add future files here (e.g., src/model/Node.cpp)
+  src/physics/Simulator.cpp
 )
 
 # Include directories
 target_include_directories(C_Structures PRIVATE
   ${SDL2_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
+  ${EIGEN3_INCLUDE_DIRS}
   ${GLEW_INCLUDE_DIRS}
+  ${GLM_INCLUDE_DIRS}
   include/
 )
 
 # Link libraries
-find_package(GTest REQUIRED)  # Add this line to find GTest
-
 target_link_libraries(C_Structures PRIVATE
-  ${SDL2_LIBRARIES}
+  SDL2::SDL2
+  SDL2::SDL2main
   OpenGL::GL
   GLEW::GLEW
-  GTest::GTest  # Link GTest to the C_Structures target
 )
 
-# Testing (future use)
+# Enable Testing
 enable_testing()
-add_subdirectory(tests)
+
+# Add test executable
+add_executable(tests
+    tests/test_main.cpp
+    tests/PhysicsTests.cpp
+)
+
+# Link GTest and Eigen3 to tests
+target_link_libraries(tests PRIVATE
+    GTest::GTest
+    GTest::Main
+    Eigen3::Eigen
+)
+
+# Register tests with CTest
+add_test(NAME Tests COMMAND tests)

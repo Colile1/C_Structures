@@ -3,6 +3,7 @@
 #include <iostream>
 #include "include/model/Node.hpp"
 #include "include/model/Beam.hpp"
+#include "include/physics/Simulator.hpp" // Add to existing includes
 #include "include/data/CSVHandler.hpp"
 
 // Global structures
@@ -106,6 +107,15 @@ int main() {
     // Load test structure
     loadTestStructure();
 
+    // Create physics engine instance
+    Simulator physicsEngine(nodes, beams); // Create physics engine instance
+
+    // Apply test force (example)
+    nodes[1].applyForce(glm::vec3(1000, 0, 0)); 
+
+    // Solve and update
+    physicsEngine.solveStaticForces(); // Solve static forces
+
     // Main loop
     bool running = true;
     while (running) {
@@ -121,7 +131,8 @@ int main() {
 
         // Render nodes
         for (const auto& node : nodes) {
-            drawSphere(node.getPosition(), 0.1f); // Implement this
+            glm::vec3 disp = physicsEngine.getNodeDisplacements()[&node - &nodes[0]]; // Get displacements
+            drawSphere(node.getPosition() + disp, 0.1f); // Implement this
         }
 
         // Render beams
