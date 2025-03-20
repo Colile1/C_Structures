@@ -4,6 +4,16 @@
 │       └── linux.yml
 ├── CMakeLists.txt
 ├── C_Structures
+│   ├── CMakeLists.txt
+│   ├── include
+│   │   ├── model
+│   │   │   ├── Beam.hpp
+│   │   │   └── Node.hpp
+│   │   └── physics
+│   │       └── Simulator.hpp
+│   ├── src
+│   │   └── physics
+│   └── tests
 ├── README.md
 ├── build
 │   ├── CMakeCache.txt
@@ -12,12 +22,15 @@
 │   │   │   ├── CMakeCXXCompiler.cmake
 │   │   │   ├── CMakeDetermineCompilerABI_CXX.bin
 │   │   │   ├── CMakeSystem.cmake
+│   │   │   ├── CompilerIdC
+│   │   │   │   └── tmp
 │   │   │   └── CompilerIdCXX
 │   │   │       ├── CMakeCXXCompilerId.cpp
 │   │   │       ├── a.out
 │   │   │       └── tmp
 │   │   ├── CMakeConfigureLog.yaml
 │   │   ├── CMakeDirectoryInformation.cmake
+│   │   ├── CMakeScratch
 │   │   ├── C_Structures.dir
 │   │   │   ├── DependInfo.cmake
 │   │   │   ├── build.make
@@ -72,6 +85,7 @@
 │   │   ├── Beam.hpp
 │   │   └── Node.hpp
 │   └── physics
+│       └── Simulator.hpp
 ├── src
 │   ├── data
 │   │   └── CSVHandler.cpp
@@ -80,10 +94,12 @@
 │   │   ├── Beam.cpp
 │   │   └── Node.cpp
 │   └── physics
+│       └── Simulator.cpp
 ├── test_structure.csv
 └── tests
     ├── CMakeLists.txt
     ├── ModelTests.cpp
+    ├── PhysicsTests.cpp
     └── test_main.cpp
 
-25 directories, 62 files
+34 directories, 69 files

@@ -20,6 +20,7 @@ add_executable(C_Structures
   src/model/Beam.cpp
   src/data/CSVHandler.cpp
   src/physics/Simulator.cpp
+  src/ui/UIHandler.cpp  # Added UIHandler
 )
 
 # Include directories
