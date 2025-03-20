@@ -1,0 +1,3 @@
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles/C_Structures.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles/rebuild_cache.dir
