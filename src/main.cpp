@@ -1,10 +1,10 @@
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <iostream>
-#include "include/model/Node.hpp"
-#include "include/model/Beam.hpp"
-#include "include/physics/Simulator.hpp" // Add to existing includes
-#include "include/data/CSVHandler.hpp"
+#include "../include/model/Node.hpp"
+#include "../include/model/Beam.hpp"
+#include "../include/physics/Simulator.hpp" // Add to existing includes
+#include "../include/data/CSVHandler.hpp"
 
 // Global structures
 std::vector<Node> nodes;
@@ -135,11 +135,19 @@ int main() {
             drawSphere(node.getPosition() + disp, 0.1f); // Implement this
         }
 
-        // Render beams
+        // Render beams with force visualization
         for (const auto& beam : beams) {
+            float force = physicsEngine.getBeamForce(beam); // Add this method to Simulator
+            glm::vec3 color = ForceRenderer::getBeamColor(force, ForceRenderer::MAX_STRESS);
+            
             drawCylinder(beam.getStart()->getPosition(), 
                         beam.getEnd()->getPosition(), 
-                        0.05f); // Implement this
+                        0.05f, 
+                        color); // Use the color based on the force
+        }
+
+        // Render force vectors
+        ForceRenderer::renderForceVectors(nodes);
         }
         glUseProgram(shaderProgram);
         

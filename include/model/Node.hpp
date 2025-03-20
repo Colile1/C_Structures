@@ -1,48 +1,38 @@
 #pragma once
 #include <glm/glm.hpp> // For vec3
 
-/**
- * @brief Represents a node in 3D space.
- */
 class Node {
 public:
-    /**
-     * @brief Construct a new Node object.
-     * 
-     * @param x X coordinate.
-     * @param y Y coordinate.
-     * @param z Z coordinate.
-     */
-    Node(float x, float y, float z);
+    Node(float x, float y, float z) : position(x, y, z), fixed(false), appliedForce(0.0f, 0.0f, 0.0f) {}
     
-    /**
-     * @brief Get the position of the node.
-     * 
-     * @return glm::vec3 The position of the node.
-     */
-    glm::vec3 getPosition() const;
+    void applyForce(const glm::vec3& force) {
+        appliedForce += force; // Accumulate applied force
+    }
 
-    /**
-     * @brief Check if the node is fixed.
-     * 
-     * @return true if the node is fixed, false otherwise.
-     */
-    bool isFixed() const;
-    
-    /**
-     * @brief Set the fixed state of the node.
-     * 
-     * @param fixed The fixed state to set.
-     */
-    void setFixed(bool fixed);
+    glm::vec3 getAppliedForce() const {
+        return appliedForce; // Return the applied force
+    }
 
-    /**
-     * @brief Apply a force to the node.
-     * 
-     * @param force The force vector to apply.
-     */
-    void applyForce(const glm::vec3& force);
-    
+    void applyForce(const glm::vec3& force) {
+        appliedForce += force; // Accumulate applied force
+    }
+
+    glm::vec3 getAppliedForce() const {
+        return appliedForce; // Return the applied force
+    }
+
+    glm::vec3 getPosition() const {
+        return position; // Return the position
+    }
+
+    bool isFixed() const {
+        return fixed; // Return if the node is fixed
+    }
+
+    void setFixed(bool fixed) {
+        this->fixed = fixed; // Set the fixed state
+    }
+
 private:
     glm::vec3 position; // 3D coordinates (meters)
     glm::vec3 appliedForce; // Force vector (Newtons)

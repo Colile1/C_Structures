@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
 #include <string>
-#include "include/model/Node.hpp"
-#include "include/model/Beam.hpp"
+#include "../model/Node.hpp"
+#include "../model/Beam.hpp"
 
 class CSVHandler {
 public:

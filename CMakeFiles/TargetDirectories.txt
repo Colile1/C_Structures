@@ -1,0 +1,9 @@
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeFiles/C_Structures.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeFiles/tests.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeFiles/test.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeFiles/edit_cache.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeFiles/list_install_components.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeFiles/install.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeFiles/install/local.dir
+/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeFiles/install/strip.dir

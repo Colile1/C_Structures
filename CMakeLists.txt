@@ -58,3 +58,10 @@ target_link_libraries(tests PRIVATE
 
 # Register tests with CTest
 add_test(NAME Tests COMMAND tests)
+
+# Add new shaders to install
+install(FILES shaders/force_vertex.glsl shaders/force_fragment.glsl
+    DESTINATION shaders)
+
+# Register tests with CTest
+add_test(NAME Tests COMMAND tests)
