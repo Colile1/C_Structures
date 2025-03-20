@@ -16,6 +16,9 @@ find_package(GLEW REQUIRED)
 # Add executable
 add_executable(C_Structures
   src/main.cpp
+  src/model/Node.cpp
+  src/model/Beam.cpp
+  src/data/CSVHandler.cpp
   # Add future files here (e.g., src/model/Node.cpp)
 )
 

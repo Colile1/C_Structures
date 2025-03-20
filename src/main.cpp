@@ -1,7 +1,41 @@
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <iostream>
-#include <GL/gl.h>
+#include "include/model/Node.hpp"
+#include "include/model/Beam.hpp"
+#include "include/data/CSVHandler.hpp"
+
+// Global structures
+std::vector<Node> nodes;
+std::vector<Beam> beams;
+
+// Load test structure
+void loadTestStructure() {
+    nodes.emplace_back(0.0f, 0.0f, 0.0f).setFixed(true);
+    nodes.emplace_back(2.0f, 0.0f, 0.0f);
+    beams.emplace_back(&nodes[0], &nodes[1], 2e11f, 0.01f); // Steel beam
+}
+
+// Function to draw a sphere
+void drawSphere(const glm::vec3& position, float radius) {
+    // Implement sphere drawing logic here
+    // This is a placeholder implementation
+    glPushMatrix();
+    glTranslatef(position.x, position.y, position.z);
+    // Draw sphere using OpenGL functions
+    // For example, using gluSphere or a custom sphere drawing function
+    glPopMatrix();
+}
+
+// Function to draw a cylinder
+void drawCylinder(const glm::vec3& start, const glm::vec3& end, float radius) {
+    // Implement cylinder drawing logic here
+    // This is a placeholder implementation
+    glPushMatrix();
+    // Calculate the cylinder's position and orientation
+    // Draw cylinder using OpenGL functions
+    glPopMatrix();
+}
 
 // Shader sources (will move to separate files later)
 const char* vertexShaderSource = R"glsl(
@@ -69,6 +103,9 @@ int main() {
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);
 
+    // Load test structure
+    loadTestStructure();
+
     // Main loop
     bool running = true;
     while (running) {
@@ -82,7 +119,17 @@ int main() {
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Render here (will add shapes later)
+        // Render nodes
+        for (const auto& node : nodes) {
+            drawSphere(node.getPosition(), 0.1f); // Implement this
+        }
+
+        // Render beams
+        for (const auto& beam : beams) {
+            drawCylinder(beam.getStart()->getPosition(), 
+                        beam.getEnd()->getPosition(), 
+                        0.05f); // Implement this
+        }
         glUseProgram(shaderProgram);
         
         SDL_GL_SwapWindow(window);
