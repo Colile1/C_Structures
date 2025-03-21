@@ -5,6 +5,7 @@
 #include "../include/model/Beam.hpp"
 #include "../include/physics/Simulator.hpp" // Add to existing includes
 #include "../include/data/CSVHandler.hpp"
+#include "../include/visualization/ForceRenderer.hpp"
 
 // Global structures
 std::vector<Node> nodes;
@@ -29,7 +30,7 @@ void drawSphere(const glm::vec3& position, float radius) {
 }
 
 // Function to draw a cylinder
-void drawCylinder(const glm::vec3& start, const glm::vec3& end, float radius) {
+void drawCylinder(const glm::vec3& start, const glm::vec3& end, float radius, const glm::vec3& color) {
     // Implement cylinder drawing logic here
     // This is a placeholder implementation
     glPushMatrix();
@@ -148,7 +149,7 @@ int main() {
 
         // Render force vectors
         ForceRenderer::renderForceVectors(nodes);
-        }
+        
         glUseProgram(shaderProgram);
         
         SDL_GL_SwapWindow(window);
