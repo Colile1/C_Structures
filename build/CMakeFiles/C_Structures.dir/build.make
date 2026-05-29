@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures
+CMAKE_SOURCE_DIR = /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build
+CMAKE_BINARY_DIR = /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/C_Structures.dir/depend.make
@@ -70,35 +70,163 @@ include CMakeFiles/C_Structures.dir/progress.make
 include CMakeFiles/C_Structures.dir/flags.make
 
 CMakeFiles/C_Structures.dir/src/main.cpp.o: CMakeFiles/C_Structures.dir/flags.make
-CMakeFiles/C_Structures.dir/src/main.cpp.o: /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/src/main.cpp
+CMakeFiles/C_Structures.dir/src/main.cpp.o: /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/main.cpp
 CMakeFiles/C_Structures.dir/src/main.cpp.o: CMakeFiles/C_Structures.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/C_Structures.dir/src/main.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/main.cpp.o -MF CMakeFiles/C_Structures.dir/src/main.cpp.o.d -o CMakeFiles/C_Structures.dir/src/main.cpp.o -c /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/src/main.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/C_Structures.dir/src/main.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/main.cpp.o -MF CMakeFiles/C_Structures.dir/src/main.cpp.o.d -o CMakeFiles/C_Structures.dir/src/main.cpp.o -c /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/main.cpp
 
 CMakeFiles/C_Structures.dir/src/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/C_Structures.dir/src/main.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/src/main.cpp > CMakeFiles/C_Structures.dir/src/main.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/main.cpp > CMakeFiles/C_Structures.dir/src/main.cpp.i
 
 CMakeFiles/C_Structures.dir/src/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/C_Structures.dir/src/main.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/src/main.cpp -o CMakeFiles/C_Structures.dir/src/main.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/main.cpp -o CMakeFiles/C_Structures.dir/src/main.cpp.s
+
+CMakeFiles/C_Structures.dir/src/model/Node.cpp.o: CMakeFiles/C_Structures.dir/flags.make
+CMakeFiles/C_Structures.dir/src/model/Node.cpp.o: /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Node.cpp
+CMakeFiles/C_Structures.dir/src/model/Node.cpp.o: CMakeFiles/C_Structures.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/C_Structures.dir/src/model/Node.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/model/Node.cpp.o -MF CMakeFiles/C_Structures.dir/src/model/Node.cpp.o.d -o CMakeFiles/C_Structures.dir/src/model/Node.cpp.o -c /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Node.cpp
+
+CMakeFiles/C_Structures.dir/src/model/Node.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/C_Structures.dir/src/model/Node.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Node.cpp > CMakeFiles/C_Structures.dir/src/model/Node.cpp.i
+
+CMakeFiles/C_Structures.dir/src/model/Node.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/C_Structures.dir/src/model/Node.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Node.cpp -o CMakeFiles/C_Structures.dir/src/model/Node.cpp.s
+
+CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o: CMakeFiles/C_Structures.dir/flags.make
+CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o: /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Beam.cpp
+CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o: CMakeFiles/C_Structures.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o -MF CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o.d -o CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o -c /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Beam.cpp
+
+CMakeFiles/C_Structures.dir/src/model/Beam.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/C_Structures.dir/src/model/Beam.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Beam.cpp > CMakeFiles/C_Structures.dir/src/model/Beam.cpp.i
+
+CMakeFiles/C_Structures.dir/src/model/Beam.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/C_Structures.dir/src/model/Beam.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Beam.cpp -o CMakeFiles/C_Structures.dir/src/model/Beam.cpp.s
+
+CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o: CMakeFiles/C_Structures.dir/flags.make
+CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o: /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/data/CSVHandler.cpp
+CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o: CMakeFiles/C_Structures.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o -MF CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o.d -o CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o -c /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/data/CSVHandler.cpp
+
+CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/data/CSVHandler.cpp > CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.i
+
+CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/data/CSVHandler.cpp -o CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.s
+
+CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o: CMakeFiles/C_Structures.dir/flags.make
+CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o: /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/physics/Simulator.cpp
+CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o: CMakeFiles/C_Structures.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o -MF CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o.d -o CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o -c /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/physics/Simulator.cpp
+
+CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/physics/Simulator.cpp > CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.i
+
+CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/physics/Simulator.cpp -o CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.s
+
+CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o: CMakeFiles/C_Structures.dir/flags.make
+CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o: /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/ui/UIHandler.cpp
+CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o: CMakeFiles/C_Structures.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o -MF CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o.d -o CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o -c /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/ui/UIHandler.cpp
+
+CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/ui/UIHandler.cpp > CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.i
+
+CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/ui/UIHandler.cpp -o CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.s
+
+CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o: CMakeFiles/C_Structures.dir/flags.make
+CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o: /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/ForceRenderer.cpp
+CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o: CMakeFiles/C_Structures.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o -MF CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o.d -o CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o -c /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/ForceRenderer.cpp
+
+CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/ForceRenderer.cpp > CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.i
+
+CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/ForceRenderer.cpp -o CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.s
+
+CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o: CMakeFiles/C_Structures.dir/flags.make
+CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o: /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/RendererUtils.cpp
+CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o: CMakeFiles/C_Structures.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o -MF CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o.d -o CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o -c /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/RendererUtils.cpp
+
+CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/RendererUtils.cpp > CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.i
+
+CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/RendererUtils.cpp -o CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.s
+
+CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o: CMakeFiles/C_Structures.dir/flags.make
+CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o: /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/graphics/Camera.cpp
+CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o: CMakeFiles/C_Structures.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o -MF CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o.d -o CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o -c /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/graphics/Camera.cpp
+
+CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/graphics/Camera.cpp > CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.i
+
+CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/graphics/Camera.cpp -o CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.s
 
 # Object files for target C_Structures
 C_Structures_OBJECTS = \
-"CMakeFiles/C_Structures.dir/src/main.cpp.o"
+"CMakeFiles/C_Structures.dir/src/main.cpp.o" \
+"CMakeFiles/C_Structures.dir/src/model/Node.cpp.o" \
+"CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o" \
+"CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o" \
+"CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o" \
+"CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o" \
+"CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o" \
+"CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o" \
+"CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o"
 
 # External object files for target C_Structures
 C_Structures_EXTERNAL_OBJECTS =
 
 C_Structures: CMakeFiles/C_Structures.dir/src/main.cpp.o
+C_Structures: CMakeFiles/C_Structures.dir/src/model/Node.cpp.o
+C_Structures: CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o
+C_Structures: CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o
+C_Structures: CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o
+C_Structures: CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o
+C_Structures: CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o
+C_Structures: CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o
+C_Structures: CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o
 C_Structures: CMakeFiles/C_Structures.dir/build.make
 C_Structures: /usr/lib/x86_64-linux-gnu/libSDL2.so
+C_Structures: /usr/lib/x86_64-linux-gnu/libSDL2main.a
 C_Structures: /usr/lib/x86_64-linux-gnu/libGLEW.so
 C_Structures: /usr/lib/x86_64-linux-gnu/libGLX.so
 C_Structures: /usr/lib/x86_64-linux-gnu/libOpenGL.so
-C_Structures: /usr/lib/x86_64-linux-gnu/libgtest.a
 C_Structures: CMakeFiles/C_Structures.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable C_Structures"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable C_Structures"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/C_Structures.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -110,6 +238,6 @@ CMakeFiles/C_Structures.dir/clean:
 .PHONY : CMakeFiles/C_Structures.dir/clean
 
 CMakeFiles/C_Structures.dir/depend:
-	cd /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles/C_Structures.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/C_Structures.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/C_Structures.dir/depend
 

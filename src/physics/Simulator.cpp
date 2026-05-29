@@ -4,7 +4,7 @@
 // physics/Simulator.cpp : assembles global stiffness and solves K*u = F.
 
 Simulator::Simulator(std::vector<Node>& nodes, std::vector<Beam>& beams)
-    : m_nodes(nodes), m_beams(beams) {
+    : m_nodes(&nodes), m_beams(&beams) {
     const int numDofs = 3 * static_cast<int>(nodes.size());
     m_globalK.resize(numDofs, numDofs);
     m_forces.resize(numDofs);
@@ -16,8 +16,8 @@ Simulator::Simulator(std::vector<Node>& nodes, std::vector<Beam>& beams)
 // Pure: writes applied node forces into the global force vector.
 void Simulator::populateForceVector() {
     m_forces.setZero();
-    for (int i = 0; i < static_cast<int>(m_nodes.size()); ++i) {
-        glm::vec3 f = m_nodes[i].getAppliedForce();
+    for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i) {
+        glm::vec3 f = (*m_nodes)[i].getAppliedForce();
         m_forces[3 * i + 0] = static_cast<double>(f.x);
         m_forces[3 * i + 1] = static_cast<double>(f.y);
         m_forces[3 * i + 2] = static_cast<double>(f.z);
@@ -29,10 +29,10 @@ void Simulator::assembleGlobalStiffnessMatrix() {
     m_globalK.setZero();
     std::vector<Eigen::Triplet<double>> triplets;
 
-    for (const Beam& beam : m_beams) {
+    for (const Beam& beam : *m_beams) {
         // Derive node indices via pointer offset from the vector base.
-        const int i = static_cast<int>(beam.getStart() - &m_nodes[0]);
-        const int j = static_cast<int>(beam.getEnd()   - &m_nodes[0]);
+        const int i = static_cast<int>(beam.getStart() - &(*m_nodes)[0]);
+        const int j = static_cast<int>(beam.getEnd()   - &(*m_nodes)[0]);
 
         const double AE_L = static_cast<double>(beam.getStiffness());
         Eigen::Matrix3d kBlock = AE_L * Eigen::Matrix3d::Identity();
@@ -51,8 +51,8 @@ void Simulator::assembleGlobalStiffnessMatrix() {
 
 // Pure: zeros out rows/columns for fixed-support DOFs to enforce boundary conditions.
 void Simulator::applySupportConstraints() {
-    for (int i = 0; i < static_cast<int>(m_nodes.size()); ++i) {
-        if (m_nodes[i].isFixed()) {
+    for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i) {
+        if ((*m_nodes)[i].isFixed()) {
             for (int dof = 0; dof < 3; ++dof) {
                 const int idx = 3 * i + dof;
                 // Zero the row and column, set diagonal to 1.
@@ -83,8 +83,8 @@ void Simulator::solveStaticForces() {
 // Output: converts flat Eigen vector to per-node glm::vec3 displacements.
 std::vector<glm::vec3> Simulator::getNodeDisplacements() const {
     std::vector<glm::vec3> result;
-    result.reserve(m_nodes.size());
-    for (int i = 0; i < static_cast<int>(m_nodes.size()); ++i) {
+    result.reserve(m_nodes->size());
+    for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i) {
         result.emplace_back(
             static_cast<float>(m_displacements[3*i + 0]),
             static_cast<float>(m_displacements[3*i + 1]),
@@ -96,8 +96,8 @@ std::vector<glm::vec3> Simulator::getNodeDisplacements() const {
 
 // Pure: computes signed axial force for a beam from the solved displacements.
 float Simulator::getBeamForce(const Beam& beam) const {
-    const int i = static_cast<int>(beam.getStart() - &m_nodes[0]);
-    const int j = static_cast<int>(beam.getEnd()   - &m_nodes[0]);
+    const int i = static_cast<int>(beam.getStart() - &(*m_nodes)[0]);
+    const int j = static_cast<int>(beam.getEnd()   - &(*m_nodes)[0]);
 
     glm::vec3 dispStart(
         static_cast<float>(m_displacements[3*i]),

@@ -23,8 +23,8 @@ private:
     void applySupportConstraints();
     void populateForceVector();
 
-    std::vector<Node>& m_nodes;
-    std::vector<Beam>& m_beams;
+    std::vector<Node>* m_nodes;
+    std::vector<Beam>* m_beams;
     Eigen::SparseMatrix<double> m_globalK;
     Eigen::VectorXd m_forces;
     Eigen::VectorXd m_displacements;

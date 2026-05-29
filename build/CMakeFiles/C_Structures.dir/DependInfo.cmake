@@ -8,7 +8,15 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/src/main.cpp" "CMakeFiles/C_Structures.dir/src/main.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/main.cpp.o.d"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/data/CSVHandler.cpp" "CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o.d"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/graphics/Camera.cpp" "CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o.d"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/main.cpp" "CMakeFiles/C_Structures.dir/src/main.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/main.cpp.o.d"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Beam.cpp" "CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o.d"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/model/Node.cpp" "CMakeFiles/C_Structures.dir/src/model/Node.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/model/Node.cpp.o.d"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/physics/Simulator.cpp" "CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o.d"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/ui/UIHandler.cpp" "CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o.d"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/ForceRenderer.cpp" "CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o.d"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/visualization/RendererUtils.cpp" "CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

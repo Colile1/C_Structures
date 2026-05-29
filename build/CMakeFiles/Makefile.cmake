@@ -7,10 +7,9 @@ set(CMAKE_DEPENDS_GENERATOR "Unix Makefiles")
 # The top level Makefile was generated from the following files:
 set(CMAKE_MAKEFILE_DEPENDS
   "CMakeCache.txt"
-  "/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/CMakeLists.txt"
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/CMakeLists.txt"
   "CMakeFiles/3.28.3/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.28.3/CMakeSystem.cmake"
-  "/mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/tests/CMakeLists.txt"
   "/usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfig.cmake"
   "/usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfigVersion.cmake"
   "/usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets-none.cmake"
@@ -62,11 +61,10 @@ set(CMAKE_MAKEFILE_OUTPUTS
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/CMakeDirectoryInformation.cmake"
-  "tests/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/C_Structures.dir/DependInfo.cmake"
-  "tests/CMakeFiles/tests.dir/DependInfo.cmake"
+  "CMakeFiles/tests.dir/DependInfo.cmake"
   )

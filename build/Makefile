@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures
+CMAKE_SOURCE_DIR = /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build
+CMAKE_BINARY_DIR = /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -95,11 +95,56 @@ rebuild_cache:
 rebuild_cache/fast: rebuild_cache
 .PHONY : rebuild_cache/fast
 
+# Special rule for the target list_install_components
+list_install_components:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Available install components are: \"Unspecified\""
+.PHONY : list_install_components
+
+# Special rule for the target list_install_components
+list_install_components/fast: list_install_components
+.PHONY : list_install_components/fast
+
+# Special rule for the target install
+install: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install
+
+# Special rule for the target install
+install/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Install the project..."
+	/usr/bin/cmake -P cmake_install.cmake
+.PHONY : install/fast
+
+# Special rule for the target install/local
+install/local: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local
+
+# Special rule for the target install/local
+install/local/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing only the local directory..."
+	/usr/bin/cmake -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake
+.PHONY : install/local/fast
+
+# Special rule for the target install/strip
+install/strip: preinstall
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing the project stripped..."
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip
+
+# Special rule for the target install/strip
+install/strip/fast: preinstall/fast
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Installing the project stripped..."
+	/usr/bin/cmake -DCMAKE_INSTALL_DO_STRIP=1 -P cmake_install.cmake
+.PHONY : install/strip/fast
+
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/sikhu/Documents/School/ALX/0/C_Structures/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -149,8 +194,59 @@ tests: cmake_check_build_system
 
 # fast build rule for target.
 tests/fast:
-	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/tests.dir/build.make tests/CMakeFiles/tests.dir/build
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/build
 .PHONY : tests/fast
+
+src/data/CSVHandler.o: src/data/CSVHandler.cpp.o
+.PHONY : src/data/CSVHandler.o
+
+# target to build an object file
+src/data/CSVHandler.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/data/CSVHandler.cpp.o
+.PHONY : src/data/CSVHandler.cpp.o
+
+src/data/CSVHandler.i: src/data/CSVHandler.cpp.i
+.PHONY : src/data/CSVHandler.i
+
+# target to preprocess a source file
+src/data/CSVHandler.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/data/CSVHandler.cpp.i
+.PHONY : src/data/CSVHandler.cpp.i
+
+src/data/CSVHandler.s: src/data/CSVHandler.cpp.s
+.PHONY : src/data/CSVHandler.s
+
+# target to generate assembly for a file
+src/data/CSVHandler.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/data/CSVHandler.cpp.s
+.PHONY : src/data/CSVHandler.cpp.s
+
+src/graphics/Camera.o: src/graphics/Camera.cpp.o
+.PHONY : src/graphics/Camera.o
+
+# target to build an object file
+src/graphics/Camera.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o
+.PHONY : src/graphics/Camera.cpp.o
+
+src/graphics/Camera.i: src/graphics/Camera.cpp.i
+.PHONY : src/graphics/Camera.i
+
+# target to preprocess a source file
+src/graphics/Camera.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.i
+.PHONY : src/graphics/Camera.cpp.i
+
+src/graphics/Camera.s: src/graphics/Camera.cpp.s
+.PHONY : src/graphics/Camera.s
+
+# target to generate assembly for a file
+src/graphics/Camera.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.s
+.PHONY : src/graphics/Camera.cpp.s
 
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
@@ -176,6 +272,279 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/model/Beam.o: src/model/Beam.cpp.o
+.PHONY : src/model/Beam.o
+
+# target to build an object file
+src/model/Beam.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/model/Beam.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/model/Beam.cpp.o
+.PHONY : src/model/Beam.cpp.o
+
+src/model/Beam.i: src/model/Beam.cpp.i
+.PHONY : src/model/Beam.i
+
+# target to preprocess a source file
+src/model/Beam.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/model/Beam.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/model/Beam.cpp.i
+.PHONY : src/model/Beam.cpp.i
+
+src/model/Beam.s: src/model/Beam.cpp.s
+.PHONY : src/model/Beam.s
+
+# target to generate assembly for a file
+src/model/Beam.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/model/Beam.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/model/Beam.cpp.s
+.PHONY : src/model/Beam.cpp.s
+
+src/model/Node.o: src/model/Node.cpp.o
+.PHONY : src/model/Node.o
+
+# target to build an object file
+src/model/Node.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/model/Node.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/model/Node.cpp.o
+.PHONY : src/model/Node.cpp.o
+
+src/model/Node.i: src/model/Node.cpp.i
+.PHONY : src/model/Node.i
+
+# target to preprocess a source file
+src/model/Node.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/model/Node.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/model/Node.cpp.i
+.PHONY : src/model/Node.cpp.i
+
+src/model/Node.s: src/model/Node.cpp.s
+.PHONY : src/model/Node.s
+
+# target to generate assembly for a file
+src/model/Node.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/model/Node.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/model/Node.cpp.s
+.PHONY : src/model/Node.cpp.s
+
+src/physics/Simulator.o: src/physics/Simulator.cpp.o
+.PHONY : src/physics/Simulator.o
+
+# target to build an object file
+src/physics/Simulator.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/physics/Simulator.cpp.o
+.PHONY : src/physics/Simulator.cpp.o
+
+src/physics/Simulator.i: src/physics/Simulator.cpp.i
+.PHONY : src/physics/Simulator.i
+
+# target to preprocess a source file
+src/physics/Simulator.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/physics/Simulator.cpp.i
+.PHONY : src/physics/Simulator.cpp.i
+
+src/physics/Simulator.s: src/physics/Simulator.cpp.s
+.PHONY : src/physics/Simulator.s
+
+# target to generate assembly for a file
+src/physics/Simulator.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/physics/Simulator.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/src/physics/Simulator.cpp.s
+.PHONY : src/physics/Simulator.cpp.s
+
+src/ui/UIHandler.o: src/ui/UIHandler.cpp.o
+.PHONY : src/ui/UIHandler.o
+
+# target to build an object file
+src/ui/UIHandler.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.o
+.PHONY : src/ui/UIHandler.cpp.o
+
+src/ui/UIHandler.i: src/ui/UIHandler.cpp.i
+.PHONY : src/ui/UIHandler.i
+
+# target to preprocess a source file
+src/ui/UIHandler.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.i
+.PHONY : src/ui/UIHandler.cpp.i
+
+src/ui/UIHandler.s: src/ui/UIHandler.cpp.s
+.PHONY : src/ui/UIHandler.s
+
+# target to generate assembly for a file
+src/ui/UIHandler.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/ui/UIHandler.cpp.s
+.PHONY : src/ui/UIHandler.cpp.s
+
+src/visualization/ForceRenderer.o: src/visualization/ForceRenderer.cpp.o
+.PHONY : src/visualization/ForceRenderer.o
+
+# target to build an object file
+src/visualization/ForceRenderer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o
+.PHONY : src/visualization/ForceRenderer.cpp.o
+
+src/visualization/ForceRenderer.i: src/visualization/ForceRenderer.cpp.i
+.PHONY : src/visualization/ForceRenderer.i
+
+# target to preprocess a source file
+src/visualization/ForceRenderer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.i
+.PHONY : src/visualization/ForceRenderer.cpp.i
+
+src/visualization/ForceRenderer.s: src/visualization/ForceRenderer.cpp.s
+.PHONY : src/visualization/ForceRenderer.s
+
+# target to generate assembly for a file
+src/visualization/ForceRenderer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.s
+.PHONY : src/visualization/ForceRenderer.cpp.s
+
+src/visualization/RendererUtils.o: src/visualization/RendererUtils.cpp.o
+.PHONY : src/visualization/RendererUtils.o
+
+# target to build an object file
+src/visualization/RendererUtils.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o
+.PHONY : src/visualization/RendererUtils.cpp.o
+
+src/visualization/RendererUtils.i: src/visualization/RendererUtils.cpp.i
+.PHONY : src/visualization/RendererUtils.i
+
+# target to preprocess a source file
+src/visualization/RendererUtils.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.i
+.PHONY : src/visualization/RendererUtils.cpp.i
+
+src/visualization/RendererUtils.s: src/visualization/RendererUtils.cpp.s
+.PHONY : src/visualization/RendererUtils.s
+
+# target to generate assembly for a file
+src/visualization/RendererUtils.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.s
+.PHONY : src/visualization/RendererUtils.cpp.s
+
+tests/CSVHandlerTests.o: tests/CSVHandlerTests.cpp.o
+.PHONY : tests/CSVHandlerTests.o
+
+# target to build an object file
+tests/CSVHandlerTests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/CSVHandlerTests.cpp.o
+.PHONY : tests/CSVHandlerTests.cpp.o
+
+tests/CSVHandlerTests.i: tests/CSVHandlerTests.cpp.i
+.PHONY : tests/CSVHandlerTests.i
+
+# target to preprocess a source file
+tests/CSVHandlerTests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/CSVHandlerTests.cpp.i
+.PHONY : tests/CSVHandlerTests.cpp.i
+
+tests/CSVHandlerTests.s: tests/CSVHandlerTests.cpp.s
+.PHONY : tests/CSVHandlerTests.s
+
+# target to generate assembly for a file
+tests/CSVHandlerTests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/CSVHandlerTests.cpp.s
+.PHONY : tests/CSVHandlerTests.cpp.s
+
+tests/IntegrationTests.o: tests/IntegrationTests.cpp.o
+.PHONY : tests/IntegrationTests.o
+
+# target to build an object file
+tests/IntegrationTests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/IntegrationTests.cpp.o
+.PHONY : tests/IntegrationTests.cpp.o
+
+tests/IntegrationTests.i: tests/IntegrationTests.cpp.i
+.PHONY : tests/IntegrationTests.i
+
+# target to preprocess a source file
+tests/IntegrationTests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/IntegrationTests.cpp.i
+.PHONY : tests/IntegrationTests.cpp.i
+
+tests/IntegrationTests.s: tests/IntegrationTests.cpp.s
+.PHONY : tests/IntegrationTests.s
+
+# target to generate assembly for a file
+tests/IntegrationTests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/IntegrationTests.cpp.s
+.PHONY : tests/IntegrationTests.cpp.s
+
+tests/ModelTests.o: tests/ModelTests.cpp.o
+.PHONY : tests/ModelTests.o
+
+# target to build an object file
+tests/ModelTests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/ModelTests.cpp.o
+.PHONY : tests/ModelTests.cpp.o
+
+tests/ModelTests.i: tests/ModelTests.cpp.i
+.PHONY : tests/ModelTests.i
+
+# target to preprocess a source file
+tests/ModelTests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/ModelTests.cpp.i
+.PHONY : tests/ModelTests.cpp.i
+
+tests/ModelTests.s: tests/ModelTests.cpp.s
+.PHONY : tests/ModelTests.s
+
+# target to generate assembly for a file
+tests/ModelTests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/ModelTests.cpp.s
+.PHONY : tests/ModelTests.cpp.s
+
+tests/PhysicsTests.o: tests/PhysicsTests.cpp.o
+.PHONY : tests/PhysicsTests.o
+
+# target to build an object file
+tests/PhysicsTests.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/PhysicsTests.cpp.o
+.PHONY : tests/PhysicsTests.cpp.o
+
+tests/PhysicsTests.i: tests/PhysicsTests.cpp.i
+.PHONY : tests/PhysicsTests.i
+
+# target to preprocess a source file
+tests/PhysicsTests.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/PhysicsTests.cpp.i
+.PHONY : tests/PhysicsTests.cpp.i
+
+tests/PhysicsTests.s: tests/PhysicsTests.cpp.s
+.PHONY : tests/PhysicsTests.s
+
+# target to generate assembly for a file
+tests/PhysicsTests.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/PhysicsTests.cpp.s
+.PHONY : tests/PhysicsTests.cpp.s
+
+tests/test_main.o: tests/test_main.cpp.o
+.PHONY : tests/test_main.o
+
+# target to build an object file
+tests/test_main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/test_main.cpp.o
+.PHONY : tests/test_main.cpp.o
+
+tests/test_main.i: tests/test_main.cpp.i
+.PHONY : tests/test_main.i
+
+# target to preprocess a source file
+tests/test_main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/test_main.cpp.i
+.PHONY : tests/test_main.cpp.i
+
+tests/test_main.s: tests/test_main.cpp.s
+.PHONY : tests/test_main.s
+
+# target to generate assembly for a file
+tests/test_main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/tests/test_main.cpp.s
+.PHONY : tests/test_main.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -183,13 +552,56 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... edit_cache"
+	@echo "... install"
+	@echo "... install/local"
+	@echo "... install/strip"
+	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... C_Structures"
 	@echo "... tests"
+	@echo "... src/data/CSVHandler.o"
+	@echo "... src/data/CSVHandler.i"
+	@echo "... src/data/CSVHandler.s"
+	@echo "... src/graphics/Camera.o"
+	@echo "... src/graphics/Camera.i"
+	@echo "... src/graphics/Camera.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/model/Beam.o"
+	@echo "... src/model/Beam.i"
+	@echo "... src/model/Beam.s"
+	@echo "... src/model/Node.o"
+	@echo "... src/model/Node.i"
+	@echo "... src/model/Node.s"
+	@echo "... src/physics/Simulator.o"
+	@echo "... src/physics/Simulator.i"
+	@echo "... src/physics/Simulator.s"
+	@echo "... src/ui/UIHandler.o"
+	@echo "... src/ui/UIHandler.i"
+	@echo "... src/ui/UIHandler.s"
+	@echo "... src/visualization/ForceRenderer.o"
+	@echo "... src/visualization/ForceRenderer.i"
+	@echo "... src/visualization/ForceRenderer.s"
+	@echo "... src/visualization/RendererUtils.o"
+	@echo "... src/visualization/RendererUtils.i"
+	@echo "... src/visualization/RendererUtils.s"
+	@echo "... tests/CSVHandlerTests.o"
+	@echo "... tests/CSVHandlerTests.i"
+	@echo "... tests/CSVHandlerTests.s"
+	@echo "... tests/IntegrationTests.o"
+	@echo "... tests/IntegrationTests.i"
+	@echo "... tests/IntegrationTests.s"
+	@echo "... tests/ModelTests.o"
+	@echo "... tests/ModelTests.i"
+	@echo "... tests/ModelTests.s"
+	@echo "... tests/PhysicsTests.o"
+	@echo "... tests/PhysicsTests.i"
+	@echo "... tests/PhysicsTests.s"
+	@echo "... tests/test_main.o"
+	@echo "... tests/test_main.i"
+	@echo "... tests/test_main.s"
 .PHONY : help
 
 

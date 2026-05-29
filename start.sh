@@ -64,6 +64,18 @@ elif [[ -f "$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake" ]]; then
     info "Using vcpkg toolchain: $HOME/vcpkg"
 fi
 
+# ── Auto-clean stale CMake cache (different source path) ──────────────────────
+CACHE_FILE="$BUILD_DIR/CMakeCache.txt"
+if [[ -f "$CACHE_FILE" ]]; then
+    CACHED_SRC=$(grep -m1 "^CMAKE_HOME_DIRECTORY:INTERNAL=" "$CACHE_FILE" | cut -d= -f2-)
+    if [[ -n "$CACHED_SRC" && "$CACHED_SRC" != "$SCRIPT_DIR" ]]; then
+        warn "Stale cache detected (was: $CACHED_SRC) — cleaning build directory ..."
+        rm -rf "$BUILD_DIR"
+        mkdir -p "$BUILD_DIR"
+        ok "Build directory cleaned"
+    fi
+fi
+
 # ── CMake configure ────────────────────────────────────────────────────────────
 info "Configuring with CMake ..."
 cmake -S "$SCRIPT_DIR" -B "$BUILD_DIR" \
