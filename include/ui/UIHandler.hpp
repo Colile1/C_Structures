@@ -22,9 +22,11 @@ public:
                      const glm::mat4& proj);
 
     // Call once per frame, after 3-D rendering, inside the ImGui frame.
+    // dispScale: caller-owned multiplier applied to displacements for visibility.
     void renderUI(SDL_Window* window,
                   std::vector<Node>& nodes,
-                  std::vector<Beam>& beams);
+                  std::vector<Beam>& beams,
+                  float& dispScale);
 
     ToolMode getCurrentTool()  const { return currentTool; }
     glm::vec3 getForceVector() const { return forceVector; }

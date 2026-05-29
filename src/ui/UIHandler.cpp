@@ -142,7 +142,8 @@ static const char* toolLabel(ToolMode m) {
 
 void UIHandler::renderUI(SDL_Window* window,
                           std::vector<Node>& nodes,
-                          std::vector<Beam>& beams) {
+                          std::vector<Beam>& beams,
+                          float& dispScale) {
     int w = 0, h = 0;
     SDL_GetWindowSize(window, &w, &h);
     const float menuH = ImGui::GetFrameHeight();
@@ -271,6 +272,10 @@ void UIHandler::renderUI(SDL_Window* window,
     ImGui::Separator();
     ImGui::Text("Nodes : %d", (int)nodes.size());
     ImGui::Text("Beams : %d", (int)beams.size());
+    ImGui::Spacing();
+    ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "DISPLAY");
+    ImGui::Separator();
+    ImGui::SliderFloat("Disp.Scale", &dispScale, 1.0f, 5000.0f, "%.0fx", ImGuiSliderFlags_Logarithmic);
 
     if (selectedNode) {
         ImGui::Spacing();

@@ -154,13 +154,15 @@ static void drawGrid(const Shader& sh, GLuint vao, GLuint vbo,
     glBindVertexArray(0);
 }
 
+// Triangle truss: two fixed base nodes, free apex under vertical load.
+// Diagonal beams provide Y-stiffness so the -Y force produces visible deflection.
 static void loadTestStructure(std::vector<Node>& nodes, std::vector<Beam>& beams) {
-    nodes.emplace_back(0.0f, 0.0f, 0.0f); nodes.back().setFixed(true);
-    nodes.emplace_back(2.0f, 0.0f, 0.0f);
-    nodes.emplace_back(4.0f, 0.0f, 0.0f);
-    beams.emplace_back(&nodes[0], &nodes[1], 2e11f, 0.01f);
-    beams.emplace_back(&nodes[1], &nodes[2], 2e11f, 0.01f);
-    nodes[2].applyForce(glm::vec3(0.0f, -5000.0f, 0.0f));
+    nodes.emplace_back(-2.0f, 0.0f, 0.0f); nodes.back().setFixed(true);
+    nodes.emplace_back( 2.0f, 0.0f, 0.0f); nodes.back().setFixed(true);
+    nodes.emplace_back( 0.0f, 3.0f, 0.0f);
+    beams.emplace_back(&nodes[0], &nodes[2], 2e11f, 1e-4f); // soft — visible deflection
+    beams.emplace_back(&nodes[1], &nodes[2], 2e11f, 1e-4f);
+    nodes[2].applyForce(glm::vec3(0.0f, -50000.0f, 0.0f));
 }
 
 int main() {
@@ -254,6 +256,7 @@ int main() {
     UIHandler ui;
     ui.initialize(WIN_W, WIN_H);
 
+    float dispScale = 50.0f; // multiply displacements for visibility
     bool running   = true;
     bool rmb       = false;
 
@@ -317,8 +320,8 @@ int main() {
             int ei = static_cast<int>(beam.getEnd()   - &nodes[0]);
             if (si < 0 || si >= (int)displacements.size()) continue;
             if (ei < 0 || ei >= (int)displacements.size()) continue;
-            glm::vec3 s = beam.getStart()->getPosition() + displacements[si];
-            glm::vec3 ep = beam.getEnd()->getPosition()  + displacements[ei];
+            glm::vec3 s = beam.getStart()->getPosition() + displacements[si] * dispScale;
+            glm::vec3 ep = beam.getEnd()->getPosition()  + displacements[ei] * dispScale;
             float force = physics.getBeamForce(beam);
             glm::vec3 col = ForceRenderer::getBeamColor(force, ForceRenderer::MAX_STRESS);
             drawBeam(geoShader, cylVAO, cylVC, s, ep, 0.04f, col, view, proj);
@@ -326,7 +329,7 @@ int main() {
 
         for (int i = 0; i < (int)nodes.size(); ++i) {
             if (i >= (int)displacements.size()) break;
-            glm::vec3 pos = nodes[i].getPosition() + displacements[i];
+            glm::vec3 pos = nodes[i].getPosition() + displacements[i] * dispScale;
             glm::vec3 col = nodes[i].isFixed()
                             ? glm::vec3(0.9f, 0.25f, 0.25f)
                             : glm::vec3(0.9f, 0.9f,  0.9f);
@@ -341,7 +344,7 @@ int main() {
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        ui.renderUI(window, nodes, beams);
+        ui.renderUI(window, nodes, beams, dispScale);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
