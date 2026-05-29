@@ -156,11 +156,14 @@ static void drawGrid(const Shader& sh, GLuint vao, GLuint vbo,
 
 // Triangle truss: two fixed base nodes, free apex under vertical load.
 // Diagonal beams provide Y-stiffness so the -Y force produces visible deflection.
+// Triangle truss: two fixed base nodes, free apex under vertical load.
 static void loadTestStructure(std::vector<Node>& nodes, std::vector<Beam>& beams) {
-    nodes.emplace_back(-2.0f, 0.0f, 0.0f); nodes.back().setFixed(true);
-    nodes.emplace_back( 2.0f, 0.0f, 0.0f); nodes.back().setFixed(true);
-    nodes.emplace_back( 0.0f, 3.0f, 0.0f);
-    beams.emplace_back(&nodes[0], &nodes[2], 2e11f, 1e-4f); // soft — visible deflection
+    nodes.emplace_back(-2.0f, 0.0f, 0.0f);
+    nodes.back().setJointType(JointType::FIXED);
+    nodes.emplace_back( 2.0f, 0.0f, 0.0f);
+    nodes.back().setJointType(JointType::FIXED);
+    nodes.emplace_back( 0.0f, 3.0f, 0.0f); // free apex
+    beams.emplace_back(&nodes[0], &nodes[2], 2e11f, 1e-4f);
     beams.emplace_back(&nodes[1], &nodes[2], 2e11f, 1e-4f);
     nodes[2].applyForce(glm::vec3(0.0f, -50000.0f, 0.0f));
 }
@@ -330,9 +333,15 @@ int main() {
         for (int i = 0; i < (int)nodes.size(); ++i) {
             if (i >= (int)displacements.size()) break;
             glm::vec3 pos = nodes[i].getPosition() + displacements[i] * dispScale;
-            glm::vec3 col = nodes[i].isFixed()
-                            ? glm::vec3(0.9f, 0.25f, 0.25f)
-                            : glm::vec3(0.9f, 0.9f,  0.9f);
+            glm::vec3 col;
+            switch (nodes[i].getJointType()) {
+                case JointType::FIXED:    col = {0.90f, 0.25f, 0.25f}; break;
+                case JointType::PIN_XY:   col = {0.95f, 0.65f, 0.15f}; break;
+                case JointType::ROLLER_X: col = {0.25f, 0.75f, 0.95f}; break;
+                case JointType::ROLLER_Y: col = {0.25f, 0.90f, 0.55f}; break;
+                case JointType::ROLLER_Z: col = {0.75f, 0.40f, 0.95f}; break;
+                default:                  col = {0.90f, 0.90f, 0.90f}; break;
+            }
             float radius = 0.09f;
             drawNode(geoShader, sphereVAO, sphereVC, pos, radius, col, view, proj);
         }

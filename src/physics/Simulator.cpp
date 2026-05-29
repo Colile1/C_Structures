@@ -58,31 +58,29 @@ void Simulator::assembleGlobalStiffnessMatrix() {
     m_globalK.setFromTriplets(triplets.begin(), triplets.end());
 }
 
-// Zeros BOTH the row AND column for each fixed-support DOF so the system
-// stays symmetric (required for ConjugateGradient). Also fixes any DOF whose
-// diagonal is zero (no stiffness in that direction) to prevent singularity.
+// Builds the fixed-DOF mask from joint types, also pins zero-stiffness DOFs
+// to prevent singularity.  Then eliminates fixed rows/cols from the sparse
+// matrix (sets them to identity rows/cols) and zeroes the corresponding
+// force entries.
 void Simulator::applySupportConstraints() {
     const int n = static_cast<int>(m_globalK.rows());
     std::vector<bool> fixed(n, false);
 
     for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i) {
-        if ((*m_nodes)[i].isFixed()) {
-            fixed[3*i]   = true;
-            fixed[3*i+1] = true;
-            fixed[3*i+2] = true;
+        const Node& nd = (*m_nodes)[i];
+        for (int d = 0; d < 3; ++d) {
+            if (nd.isDOFConstrained(d))
+                fixed[3*i + d] = true;
         }
     }
 
-    // Also mark DOFs with zero diagonal (no stiffness) as fixed to zero
-    // so the system is non-singular.
+    // Pin DOFs with zero diagonal (unconnected or out-of-plane) to avoid singularity.
     for (int i = 0; i < n; ++i) {
-        if (!fixed[i] && std::abs(m_globalK.coeff(i, i)) < 1e-12) {
+        if (!fixed[i] && std::abs(m_globalK.coeff(i, i)) < 1e-12)
             fixed[i] = true;
-        }
     }
 
-    // Walk every stored non-zero: if either row OR col is fixed, apply BC.
-    // Column-major outer loop hits every non-zero exactly once.
+    // Eliminate fixed DOFs: zero the row and column, put 1 on the diagonal.
     for (int col = 0; col < m_globalK.outerSize(); ++col) {
         for (Eigen::SparseMatrix<double>::InnerIterator it(m_globalK, col); it; ++it) {
             if (fixed[it.row()] || fixed[it.col()])
@@ -102,18 +100,15 @@ void Simulator::solveStaticForces() {
     assembleGlobalStiffnessMatrix();
     applySupportConstraints();
 
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
-                             Eigen::Lower | Eigen::Upper> solver;
-    solver.setMaxIterations(1000);
-    solver.setTolerance(1e-8);
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
     solver.compute(m_globalK);
     if (solver.info() != Eigen::Success) {
-        std::cerr << "Simulator: decomposition failed\n"; return;
+        std::cerr << "Simulator: decomposition failed (structure may be a mechanism)\n";
+        return;
     }
     m_displacements = solver.solve(m_forces);
     if (solver.info() != Eigen::Success)
-        std::cerr << "Simulator: solve did not converge (iter="
-                  << solver.iterations() << ", err=" << solver.error() << ")\n";
+        std::cerr << "Simulator: solve failed\n";
 }
 
 std::vector<glm::vec3> Simulator::getNodeDisplacements() const {

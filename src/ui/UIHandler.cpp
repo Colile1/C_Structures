@@ -294,9 +294,12 @@ void UIHandler::renderUI(SDL_Window* window,
         }
 
         ImGui::Spacing();
-        bool fixed = selectedNode->isFixed();
-        if (ImGui::Checkbox("Fixed Support", &fixed)) {
-            selectedNode->setFixed(fixed);
+        static const char* jointNames[] = {
+            "Free", "Fixed", "Pin XY", "Roller X", "Roller Y", "Roller Z"
+        };
+        int jt = static_cast<int>(selectedNode->getJointType());
+        if (ImGui::Combo("Joint Type", &jt, jointNames, 6)) {
+            selectedNode->setJointType(static_cast<JointType>(jt));
             needsSolveFlag = true;
         }
 
