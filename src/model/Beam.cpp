@@ -1,4 +1,4 @@
-#include "include/model/Beam.hpp"
+#include "model/Beam.hpp"
 #include <glm/glm.hpp>
 
 Beam::Beam(Node* start, Node* end, float E, float A)

@@ -45,9 +45,12 @@ add_executable(tests
     tests/test_main.cpp
     tests/ModelTests.cpp
     tests/PhysicsTests.cpp
+    tests/CSVHandlerTests.cpp
+    tests/IntegrationTests.cpp
     src/model/Node.cpp
     src/model/Beam.cpp
     src/physics/Simulator.cpp
+    src/data/CSVHandler.cpp
 )
 
 target_include_directories(tests PRIVATE
@@ -56,13 +59,17 @@ target_include_directories(tests PRIVATE
     include/
 )
 
+# Register individual test suites so ctest can filter by name.
+add_test(NAME ModelTests     COMMAND tests --gtest_filter=NodeTest*:BeamTest*)
+add_test(NAME PhysicsTests   COMMAND tests --gtest_filter=PhysicsEngine*)
+add_test(NAME CSVTests       COMMAND tests --gtest_filter=CSVHandler*)
+add_test(NAME IntegrationTests COMMAND tests --gtest_filter=Integration*)
+
 target_link_libraries(tests PRIVATE
     GTest::GTest
     GTest::Main
     Eigen3::Eigen
 )
-
-add_test(NAME Tests COMMAND tests)
 
 install(FILES shaders/force_vertex.glsl shaders/force_fragment.glsl
     DESTINATION shaders)
