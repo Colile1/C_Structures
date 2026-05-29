@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/include -isystem /usr/include/SDL2 -isystem /usr/include/eigen3
+CXX_INCLUDES = -I/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/include -I/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/_deps/imgui-src -I/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/_deps/imgui-src/backends -isystem /usr/include/SDL2 -isystem /usr/include/eigen3
 
 CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17
 

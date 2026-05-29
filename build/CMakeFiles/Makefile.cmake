@@ -30,9 +30,13 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/GNU.cmake"
+  "/usr/share/cmake-3.28/Modules/ExternalProject/shared_internal_commands.cmake"
   "/usr/share/cmake-3.28/Modules/FeatureSummary.cmake"
+  "/usr/share/cmake-3.28/Modules/FetchContent.cmake"
+  "/usr/share/cmake-3.28/Modules/FetchContent/CMakeLists.cmake.in"
   "/usr/share/cmake-3.28/Modules/FindGLEW.cmake"
   "/usr/share/cmake-3.28/Modules/FindGTest.cmake"
+  "/usr/share/cmake-3.28/Modules/FindGit.cmake"
   "/usr/share/cmake-3.28/Modules/FindOpenGL.cmake"
   "/usr/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake"
   "/usr/share/cmake-3.28/Modules/FindPackageMessage.cmake"
@@ -60,11 +64,13 @@ set(CMAKE_MAKEFILE_OUTPUTS
 
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
+  "_deps/imgui-subbuild/CMakeLists.txt"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
+  "CMakeFiles/imgui_lib.dir/DependInfo.cmake"
   "CMakeFiles/C_Structures.dir/DependInfo.cmake"
   "CMakeFiles/tests.dir/DependInfo.cmake"
   )

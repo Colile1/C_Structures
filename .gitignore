@@ -1,0 +1,47 @@
+# Build output
+build/
+*.o
+*.a
+*.so
+*.dylib
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.user
+.vs/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Compiled binaries
+C_Structures
+C_Structures.exe
+tests
+tests.exe
+
+# Auto-generated dependency files
+*.d
+
+# Meta / internal docs
+.claude/
+.sixth/
+rules.md
+plan.md
+todo.md
+log.md
+starter_guide.md

@@ -1,9 +1,6 @@
+/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/imgui_lib.dir
 /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/C_Structures.dir
 /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/tests.dir
 /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/test.dir
 /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/edit_cache.dir
 /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/rebuild_cache.dir
-/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/list_install_components.dir
-/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/install.dir
-/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/install/local.dir
-/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles/install/strip.dir

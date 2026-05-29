@@ -36,6 +36,7 @@ private:
     // VAOs and VBOs for arrow rendering
     unsigned int cylinderVAO, cylinderVBO;
     unsigned int coneVAO, coneVBO;
+    int cylinderVCount, coneVCount;
     
     // Generate cylinder and cone meshes for arrows
     void generateCylinderMesh();

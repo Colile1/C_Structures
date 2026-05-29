@@ -220,11 +220,13 @@ C_Structures: CMakeFiles/C_Structures.dir/src/visualization/ForceRenderer.cpp.o
 C_Structures: CMakeFiles/C_Structures.dir/src/visualization/RendererUtils.cpp.o
 C_Structures: CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o
 C_Structures: CMakeFiles/C_Structures.dir/build.make
-C_Structures: /usr/lib/x86_64-linux-gnu/libSDL2.so
 C_Structures: /usr/lib/x86_64-linux-gnu/libSDL2main.a
 C_Structures: /usr/lib/x86_64-linux-gnu/libGLEW.so
+C_Structures: libimgui_lib.a
+C_Structures: /usr/lib/x86_64-linux-gnu/libSDL2.so
 C_Structures: /usr/lib/x86_64-linux-gnu/libGLX.so
 C_Structures: /usr/lib/x86_64-linux-gnu/libOpenGL.so
+C_Structures: /usr/lib/x86_64-linux-gnu/libGLEW.so
 C_Structures: CMakeFiles/C_Structures.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable C_Structures"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/C_Structures.dir/link.txt --verbose=$(VERBOSE)

@@ -1,271 +1,344 @@
 #include "ui/UIHandler.hpp"
+#include <imgui.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <algorithm>
 #include <cmath>
+#include <string>
 
-// ui/UIHandler.cpp : 2D toolbar overlay and user interaction handling.
-
-// Orthographic vertex shader — maps screen pixels to NDC.
-static const char* UI_VERT = R"glsl(
-#version 330 core
-layout(location = 0) in vec2 aPos;
-uniform mat4 uOrtho;
-void main() { gl_Position = uOrtho * vec4(aPos, 0.0, 1.0); }
-)glsl";
-
-// Simple flat-color fragment shader with alpha.
-static const char* UI_FRAG = R"glsl(
-#version 330 core
-out vec4 FragColor;
-uniform vec3 uColor;
-uniform float uAlpha;
-void main() { FragColor = vec4(uColor, uAlpha); }
-)glsl";
-
-static GLuint compileUIShader(GLenum type, const char* src) {
-    GLuint id = glCreateShader(type);
-    glShaderSource(id, 1, &src, nullptr);
-    glCompileShader(id);
-    return id;
-}
-
-UIHandler::~UIHandler() {
-    if (rectVAO) { glDeleteVertexArrays(1, &rectVAO); glDeleteBuffers(1, &rectVBO); }
-    if (lineVAO) { glDeleteVertexArrays(1, &lineVAO); glDeleteBuffers(1, &lineVBO); }
-    if (uiShader) glDeleteProgram(uiShader);
-}
-
-// Initializes the 2D shader and geometry buffers.
 void UIHandler::initialize(int w, int h) {
     screenWidth  = w;
     screenHeight = h;
-
-    GLuint vert = compileUIShader(GL_VERTEX_SHADER, UI_VERT);
-    GLuint frag = compileUIShader(GL_FRAGMENT_SHADER, UI_FRAG);
-    uiShader = glCreateProgram();
-    glAttachShader(uiShader, vert);
-    glAttachShader(uiShader, frag);
-    glLinkProgram(uiShader);
-    glDeleteShader(vert);
-    glDeleteShader(frag);
-
-    // Rect VAO: two triangles forming a quad, positions updated each draw.
-    glGenVertexArrays(1, &rectVAO);
-    glGenBuffers(1, &rectVBO);
-    glBindVertexArray(rectVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, rectVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 12, nullptr, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
-
-    // Line VAO: two vertices for a line segment.
-    glGenVertexArrays(1, &lineVAO);
-    glGenBuffers(1, &lineVBO);
-    glBindVertexArray(lineVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 4, nullptr, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
 }
 
-// Pure: returns node within snap threshold or nullptr.
 Node* UIHandler::findNodeUnderCursor(const glm::vec3& worldPos, std::vector<Node>& nodes) {
-    for (auto& node : nodes) {
-        if (glm::distance(node.getPosition(), worldPos) < 0.25f)
-            return &node;
+    Node* best = nullptr;
+    float bestDist = 0.35f;
+    for (auto& n : nodes) {
+        float d = glm::distance(n.getPosition(), worldPos);
+        if (d < bestDist) { bestDist = d; best = &n; }
     }
-    return nullptr;
+    return best;
 }
 
-// Pure: unprojects mouse pixel → ray → intersects XZ plane (y=0).
 glm::vec3 UIHandler::screenToWorld(int mx, int my,
-                                   const glm::mat4& view,
-                                   const glm::mat4& projection) const {
+                                    const glm::mat4& view,
+                                    const glm::mat4& proj) const {
     float ndcX =  (2.0f * mx) / screenWidth  - 1.0f;
     float ndcY = -(2.0f * my) / screenHeight + 1.0f;
-
     glm::vec4 rayClip(ndcX, ndcY, -1.0f, 1.0f);
-    glm::vec4 rayEye = glm::inverse(projection) * rayClip;
+    glm::vec4 rayEye  = glm::inverse(proj) * rayClip;
     rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
-    glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
-
-    glm::vec3 camPos = glm::vec3(glm::inverse(view)[3]);
-    // Intersect with y=0 plane.
-    float t = (camPos.y != 0.0f) ? (-camPos.y / rayWorld.y) : 0.0f;
-    return camPos + t * rayWorld;
+    glm::vec3 rayDir  = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
+    glm::vec3 camPos  = glm::vec3(glm::inverse(view)[3]);
+    float t = (std::abs(rayDir.y) > 1e-6f) ? (-camPos.y / rayDir.y) : 0.0f;
+    return camPos + t * rayDir;
 }
 
-void UIHandler::handleEvent(SDL_Event& e, std::vector<Node>& nodes,
-                            std::vector<Beam>& beams,
-                            const glm::mat4& view, const glm::mat4& projection) {
+void UIHandler::handleEvent(SDL_Event& e,
+                             std::vector<Node>& nodes,
+                             std::vector<Beam>& beams,
+                             const glm::mat4& view,
+                             const glm::mat4& proj) {
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED) {
+        screenWidth  = e.window.data1;
+        screenHeight = e.window.data2;
+    }
+
+    // Let ImGui consume its events first
+    if (io.WantCaptureMouse) { draggingNode = false; return; }
+
     if (e.type == SDL_MOUSEMOTION) {
-        // Skip events over the toolbar region.
-        if (e.motion.x > 110)
-            currentMouseWorldPos = screenToWorld(e.motion.x, e.motion.y, view, projection);
+        currentMouseWorldPos = screenToWorld(e.motion.x, e.motion.y, view, proj);
+        if (draggingNode && selectedNode) {
+            selectedNode->setPosition(
+                {currentMouseWorldPos.x, selectedNode->getPosition().y, currentMouseWorldPos.z});
+            needsSolveFlag = true;
+        }
     }
 
     if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
-        int mx = e.button.x;
-        int my = e.button.y;
-
-        // Toolbar button hits.
-        if (mx < 110) {
-            if (my >= 10 && my <= 50)  { currentTool = ToolMode::NODE_PLACEMENT;  selectedNode = nullptr; return; }
-            if (my >= 60 && my <= 100) { currentTool = ToolMode::BEAM_CREATION;   selectedNode = nullptr; return; }
-            if (my >= 110 && my <= 150){ currentTool = ToolMode::FORCE_APPLICATION; return; }
-            return;
-        }
-
-        glm::vec3 worldPos = screenToWorld(mx, my, view, projection);
+        glm::vec3 wp = screenToWorld(e.button.x, e.button.y, view, proj);
 
         switch (currentTool) {
+            case ToolMode::SELECT: {
+                Node* hit = findNodeUnderCursor(wp, nodes);
+                if (hit) { selectedNode = hit; draggingNode = true; }
+                else     { selectedNode = nullptr; }
+                break;
+            }
             case ToolMode::NODE_PLACEMENT:
-                nodes.emplace_back(worldPos.x, worldPos.y, worldPos.z);
+                nodes.emplace_back(wp.x, 0.0f, wp.z);
+                needsSolveFlag = true;
                 break;
 
             case ToolMode::BEAM_CREATION:
-                if (Node* hit = findNodeUnderCursor(worldPos, nodes)) {
-                    if (!selectedNode) {
-                        selectedNode = hit;
-                    } else if (hit != selectedNode) {
-                        beams.emplace_back(selectedNode, hit, 2e11f, 0.01f);
-                        selectedNode = nullptr;
+                if (Node* hit = findNodeUnderCursor(wp, nodes)) {
+                    if (!beamStart) {
+                        beamStart = hit;
+                    } else if (hit != beamStart) {
+                        beams.emplace_back(beamStart, hit, 2e11f, 0.01f);
+                        beamStart = nullptr;
+                        needsSolveFlag = true;
                     }
                 }
                 break;
 
             case ToolMode::FORCE_APPLICATION:
-                if (Node* hit = findNodeUnderCursor(worldPos, nodes))
+                if (Node* hit = findNodeUnderCursor(wp, nodes)) {
                     hit->applyForce(forceVector);
+                    needsSolveFlag = true;
+                }
                 break;
         }
     }
 
-    // Right-click cancels beam selection.
-    if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT)
-        selectedNode = nullptr;
+    if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT)
+        draggingNode = false;
 
-    // Key shortcuts: N = nodes, B = beams, F = forces, Esc = cancel.
-    if (e.type == SDL_KEYDOWN) {
+    if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT) {
+        beamStart    = nullptr;
+        draggingNode = false;
+    }
+
+    if (!io.WantCaptureKeyboard && e.type == SDL_KEYDOWN) {
         switch (e.key.keysym.sym) {
-            case SDLK_n: currentTool = ToolMode::NODE_PLACEMENT;  selectedNode = nullptr; break;
-            case SDLK_b: currentTool = ToolMode::BEAM_CREATION;   selectedNode = nullptr; break;
+            case SDLK_1: currentTool = ToolMode::SELECT;            break;
+            case SDLK_n: currentTool = ToolMode::NODE_PLACEMENT;    break;
+            case SDLK_b: currentTool = ToolMode::BEAM_CREATION; beamStart = nullptr; break;
             case SDLK_f: currentTool = ToolMode::FORCE_APPLICATION; break;
-            case SDLK_ESCAPE: selectedNode = nullptr; break;
+            case SDLK_ESCAPE: beamStart = nullptr; selectedNode = nullptr; draggingNode = false; break;
+            case SDLK_DELETE:
+                if (selectedNode) {
+                    beams.erase(
+                        std::remove_if(beams.begin(), beams.end(),
+                            [&](const Beam& b){
+                                return b.getStart() == selectedNode || b.getEnd() == selectedNode;
+                            }),
+                        beams.end()
+                    );
+                    nodes.erase(
+                        std::find_if(nodes.begin(), nodes.end(),
+                            [&](const Node& n){ return &n == selectedNode; }));
+                    selectedNode   = nullptr;
+                    needsSolveFlag = true;
+                }
+                break;
             default: break;
         }
     }
 }
 
-// Output: submits a dynamic quad to the GPU and draws it.
-void UIHandler::submitRect(float x, float y, float w, float h,
-                           const glm::vec3& color, float alpha) {
-    float verts[12] = {
-        x,     y,
-        x + w, y,
-        x + w, y + h,
-        x,     y,
-        x + w, y + h,
-        x,     y + h
-    };
-    glBindBuffer(GL_ARRAY_BUFFER, rectVBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
-
-    glUniform3fv(glGetUniformLocation(uiShader, "uColor"), 1, glm::value_ptr(color));
-    glUniform1f(glGetUniformLocation(uiShader, "uAlpha"), alpha);
-
-    glBindVertexArray(rectVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindVertexArray(0);
+static const char* toolLabel(ToolMode m) {
+    switch (m) {
+        case ToolMode::SELECT:            return "Select";
+        case ToolMode::NODE_PLACEMENT:    return "Node";
+        case ToolMode::BEAM_CREATION:     return "Beam";
+        case ToolMode::FORCE_APPLICATION: return "Force";
+    }
+    return "";
 }
 
-void UIHandler::drawRect(float x, float y, float w, float h,
-                         const glm::vec3& color, float alpha) {
-    submitRect(x, y, w, h, color, alpha);
-}
-
-// Output: button with highlight when active.
-void UIHandler::drawButton(float x, float y, float w, float h, bool active) {
-    glm::vec3 bg  = active ? glm::vec3(0.25f, 0.55f, 0.90f) : glm::vec3(0.22f, 0.22f, 0.22f);
-    glm::vec3 brd = active ? glm::vec3(0.40f, 0.70f, 1.00f) : glm::vec3(0.40f, 0.40f, 0.40f);
-    submitRect(x, y, w, h, bg, 1.0f);
-    // 1px border via four thin rects.
-    submitRect(x, y,         w, 1.0f, brd, 1.0f);
-    submitRect(x, y + h - 1, w, 1.0f, brd, 1.0f);
-    submitRect(x, y,         1.0f, h, brd, 1.0f);
-    submitRect(x + w - 1, y, 1.0f, h, brd, 1.0f);
-}
-
-// Output: track + filled knob for a float value in [minVal, maxVal].
-void UIHandler::drawSlider(float x, float y, float w, float h,
-                           float val, float minVal, float maxVal) {
-    submitRect(x, y, w, h, {0.15f, 0.15f, 0.15f}, 1.0f);
-    float t = (val - minVal) / (maxVal - minVal);
-    t = std::clamp(t, 0.0f, 1.0f);
-    submitRect(x, y, w * t, h, {0.25f, 0.55f, 0.90f}, 1.0f);
-}
-
-// Output: screen-space line for beam preview.
-void UIHandler::drawPreviewBeam(const glm::vec3& startWorld, const glm::vec3& endWorld,
-                                const glm::mat4& view, const glm::mat4& projection) {
-    auto project = [&](glm::vec3 p) -> glm::vec2 {
-        glm::vec4 clip = projection * view * glm::vec4(p, 1.0f);
-        glm::vec3 ndc  = glm::vec3(clip) / clip.w;
-        return { (ndc.x + 1.0f) * 0.5f * screenWidth,
-                 (1.0f - ndc.y) * 0.5f * screenHeight };
-    };
-    glm::vec2 s = project(startWorld);
-    glm::vec2 e = project(endWorld);
-    float verts[4] = { s.x, s.y, e.x, e.y };
-
-    glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
-
-    glUniform3f(glGetUniformLocation(uiShader, "uColor"), 1.0f, 0.8f, 0.0f);
-    glUniform1f(glGetUniformLocation(uiShader, "uAlpha"), 0.8f);
-
-    glBindVertexArray(lineVAO);
-    glDrawArrays(GL_LINES, 0, 2);
-    glBindVertexArray(0);
-}
-
-void UIHandler::renderToolbar(SDL_Window* window) {
-    int w, h;
+void UIHandler::renderUI(SDL_Window* window,
+                          std::vector<Node>& nodes,
+                          std::vector<Beam>& beams) {
+    int w = 0, h = 0;
     SDL_GetWindowSize(window, &w, &h);
+    const float menuH = ImGui::GetFrameHeight();
 
-    // Semi-transparent dark background panel.
-    drawRect(0.0f, 0.0f, 110.0f, static_cast<float>(h), {0.12f, 0.12f, 0.12f}, 0.85f);
+    // ── Top menu bar ──────────────────────────────────────────────────────────
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("New Structure", "Ctrl+N")) {
+                nodes.clear();
+                beams.clear();
+                selectedNode   = nullptr;
+                beamStart      = nullptr;
+                needsSolveFlag = true;
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Exit", "Alt+F4")) {
+                SDL_Event q; q.type = SDL_QUIT;
+                SDL_PushEvent(&q);
+            }
+            ImGui::EndMenu();
+        }
 
-    drawButton(10.0f,  10.0f, 90.0f, 40.0f, currentTool == ToolMode::NODE_PLACEMENT);
-    drawButton(10.0f,  60.0f, 90.0f, 40.0f, currentTool == ToolMode::BEAM_CREATION);
-    drawButton(10.0f, 110.0f, 90.0f, 40.0f, currentTool == ToolMode::FORCE_APPLICATION);
+        if (ImGui::BeginMenu("Tools")) {
+            if (ImGui::MenuItem("Select",  "1", currentTool == ToolMode::SELECT))
+                currentTool = ToolMode::SELECT;
+            if (ImGui::MenuItem("Node",    "N", currentTool == ToolMode::NODE_PLACEMENT))
+                currentTool = ToolMode::NODE_PLACEMENT;
+            if (ImGui::MenuItem("Beam",    "B", currentTool == ToolMode::BEAM_CREATION))
+                { currentTool = ToolMode::BEAM_CREATION; beamStart = nullptr; }
+            if (ImGui::MenuItem("Force",   "F", currentTool == ToolMode::FORCE_APPLICATION))
+                currentTool = ToolMode::FORCE_APPLICATION;
+            ImGui::EndMenu();
+        }
 
-    if (currentTool == ToolMode::FORCE_APPLICATION)
-        drawSlider(10.0f, 160.0f, 90.0f, 18.0f, forceVector.x, -5000.0f, 5000.0f);
-}
+        if (ImGui::BeginMenu("Simulation")) {
+            if (ImGui::MenuItem("Run Solver", "Enter"))
+                needsSolveFlag = true;
+            ImGui::EndMenu();
+        }
 
-void UIHandler::renderUI(SDL_Window* window) {
-    if (!uiShader) return;
+        // Mode indicator in menu bar right side
+        float rightEdge = ImGui::GetContentRegionAvail().x;
+        std::string modeStr = "Mode: ";
+        modeStr += toolLabel(currentTool);
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + rightEdge
+                             - ImGui::CalcTextSize(modeStr.c_str()).x - 8.0f);
+        ImGui::TextDisabled("%s", modeStr.c_str());
 
-    int w, h;
-    SDL_GetWindowSize(window, &w, &h);
+        ImGui::EndMainMenuBar();
+    }
 
-    glm::mat4 ortho = glm::ortho(0.0f, static_cast<float>(w),
-                                 static_cast<float>(h), 0.0f,
-                                 -1.0f, 1.0f);
-    glUseProgram(uiShader);
-    glUniformMatrix4fv(glGetUniformLocation(uiShader, "uOrtho"), 1, GL_FALSE,
-                       glm::value_ptr(ortho));
+    // ── Left toolbar ──────────────────────────────────────────────────────────
+    const float tbW = 130.0f;
+    ImGui::SetNextWindowPos(ImVec2(0, menuH), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(tbW, (float)h - menuH - 24.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.90f);
+    ImGui::Begin("##toolbar", nullptr,
+                 ImGuiWindowFlags_NoTitleBar   | ImGuiWindowFlags_NoResize |
+                 ImGuiWindowFlags_NoMove       | ImGuiWindowFlags_NoScrollbar |
+                 ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "TOOLS");
+    ImGui::Separator();
+    ImGui::Spacing();
 
-    renderToolbar(window);
+    auto toolBtn = [&](ToolMode mode, const char* icon, const char* tip, const char* key) {
+        bool active = (currentTool == mode);
+        if (active)
+            ImGui::PushStyleColor(ImGuiCol_Button,
+                                  ImVec4(0.22f, 0.52f, 0.88f, 1.0f));
+        char label[32];
+        snprintf(label, sizeof(label), "%s  %s", icon, toolLabel(mode));
+        if (ImGui::Button(label, ImVec2(112, 34)))
+            currentTool = mode;
+        if (active) ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s  [%s]", tip, key);
+        ImGui::Spacing();
+    };
 
-    glDisable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
+    toolBtn(ToolMode::SELECT,            "[S]", "Select / Drag nodes", "1");
+    toolBtn(ToolMode::NODE_PLACEMENT,    "[+]", "Place a node",        "N");
+    toolBtn(ToolMode::BEAM_CREATION,     "[=]", "Connect two nodes",   "B");
+    toolBtn(ToolMode::FORCE_APPLICATION, "[v]", "Apply force to node", "F");
+
+    // Beam-creation hint
+    if (currentTool == ToolMode::BEAM_CREATION) {
+        ImGui::Separator();
+        if (beamStart)
+            ImGui::TextColored({1.0f, 0.85f, 0.2f, 1.0f}, "Click end node");
+        else
+            ImGui::TextWrapped("Click start node");
+    }
+
+    // Force options
+    if (currentTool == ToolMode::FORCE_APPLICATION) {
+        ImGui::Separator();
+        ImGui::Text("Force (N):");
+        bool ch = false;
+        ch |= ImGui::DragFloat("Fx", &forceMagX, 50.f, -1e5f, 1e5f, "%.0f");
+        ch |= ImGui::DragFloat("Fy", &forceMagY, 50.f, -1e5f, 1e5f, "%.0f");
+        ch |= ImGui::DragFloat("Fz", &forceMagZ, 50.f, -1e5f, 1e5f, "%.0f");
+        if (ch) forceVector = {forceMagX, forceMagY, forceMagZ};
+    }
+
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::TextColored({0.6f, 0.6f, 0.6f, 1.0f}, "Camera:");
+    ImGui::TextWrapped("Right-drag: orbit\nScroll: zoom");
+    ImGui::Spacing();
+    ImGui::TextColored({0.6f, 0.6f, 0.6f, 1.0f}, "Editing:");
+    ImGui::TextWrapped("Enter: re-solve\nDel: delete node");
+
+    ImGui::End();
+
+    // ── Right properties panel ─────────────────────────────────────────────────
+    const float propW = 185.0f;
+    ImGui::SetNextWindowPos(ImVec2((float)w - propW, menuH), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(propW, (float)h - menuH - 24.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.90f);
+    ImGui::Begin("Properties", nullptr,
+                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                 ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+    ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "SCENE");
+    ImGui::Separator();
+    ImGui::Text("Nodes : %d", (int)nodes.size());
+    ImGui::Text("Beams : %d", (int)beams.size());
+
+    if (selectedNode) {
+        ImGui::Spacing();
+        ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "SELECTED NODE");
+        ImGui::Separator();
+
+        glm::vec3 pos = selectedNode->getPosition();
+        float px = pos.x, py = pos.y, pz = pos.z;
+        bool posChg = false;
+        posChg |= ImGui::DragFloat("X##p", &px, 0.05f, -100.f, 100.f, "%.2f");
+        posChg |= ImGui::DragFloat("Y##p", &py, 0.05f, -100.f, 100.f, "%.2f");
+        posChg |= ImGui::DragFloat("Z##p", &pz, 0.05f, -100.f, 100.f, "%.2f");
+        if (posChg) {
+            selectedNode->setPosition({px, py, pz});
+            needsSolveFlag = true;
+        }
+
+        ImGui::Spacing();
+        bool fixed = selectedNode->isFixed();
+        if (ImGui::Checkbox("Fixed Support", &fixed)) {
+            selectedNode->setFixed(fixed);
+            needsSolveFlag = true;
+        }
+
+        glm::vec3 f = selectedNode->getAppliedForce();
+        ImGui::Text("Force: (%.0f,%.0f,%.0f)", f.x, f.y, f.z);
+
+        if (ImGui::Button("Clear Force", ImVec2(-1, 0))) {
+            selectedNode->clearForce();
+            needsSolveFlag = true;
+        }
+        ImGui::Spacing();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f, 0.18f, 0.18f, 1.0f));
+        if (ImGui::Button("Delete Node", ImVec2(-1, 0))) {
+            Node* target = selectedNode;
+            beams.erase(
+                std::remove_if(beams.begin(), beams.end(),
+                    [target](const Beam& b){
+                        return b.getStart() == target || b.getEnd() == target;
+                    }),
+                beams.end());
+            nodes.erase(
+                std::find_if(nodes.begin(), nodes.end(),
+                    [target](const Node& n){ return &n == target; }));
+            selectedNode   = nullptr;
+            needsSolveFlag = true;
+        }
+        ImGui::PopStyleColor();
+    } else {
+        ImGui::Spacing();
+        ImGui::TextDisabled("No node selected.\nUse Select tool\nand click a node.");
+    }
+
+    ImGui::End();
+
+    // ── Bottom status bar ──────────────────────────────────────────────────────
+    ImGui::SetNextWindowPos(ImVec2(0, (float)h - 24.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2((float)w, 24.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.90f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 3));
+    ImGui::Begin("##status", nullptr,
+                 ImGuiWindowFlags_NoTitleBar    | ImGuiWindowFlags_NoResize |
+                 ImGuiWindowFlags_NoMove        | ImGuiWindowFlags_NoScrollbar |
+                 ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::Text("Mode: %-8s  |  World (%.2f, %.2f, %.2f)  |  Nodes: %d  Beams: %d",
+                toolLabel(currentTool),
+                currentMouseWorldPos.x, currentMouseWorldPos.y, currentMouseWorldPos.z,
+                (int)nodes.size(), (int)beams.size());
+    ImGui::End();
+    ImGui::PopStyleVar();
 }

@@ -77,13 +77,14 @@ if [[ -f "$CACHE_FILE" ]]; then
 fi
 
 # ── CMake configure ────────────────────────────────────────────────────────────
-info "Configuring with CMake ..."
+info "Configuring with CMake (may download ImGui on first run) ..."
 cmake -S "$SCRIPT_DIR" -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
     $CMAKE_EXTRA \
     2>&1 | grep -v "^--" | grep -v "^$" || true
 
-if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+CMAKE_EXIT=${PIPESTATUS[0]}
+if [[ $CMAKE_EXIT -ne 0 ]]; then
     fail "CMake configuration failed. Check that all dependencies are installed."
 fi
 ok "CMake configured"
