@@ -3,7 +3,7 @@
 #include <vector>
 #include "../model/Beam.hpp"
 #include "../model/Node.hpp"
-#include "../graphics/Shader.hpp"
+#include "graphics/Shader.hpp"
 
 class ForceRenderer {
 public:
@@ -23,12 +23,12 @@ public:
     void drawArrow(const glm::vec3& start, const glm::vec3& end, const glm::vec3& color, 
                   const glm::mat4& view, const glm::mat4& projection);
     
-    // Color scheme constants
-    static constexpr glm::vec3 TENSION_COLOR = {0.0f, 0.0f, 1.0f}; // Blue
-    static constexpr glm::vec3 COMPRESSION_COLOR = {1.0f, 0.0f, 0.0f}; // Red
-    static constexpr glm::vec3 NEUTRAL_COLOR = {0.7f, 0.7f, 0.7f}; // Gray
-    static constexpr float MAX_STRESS = 1e6f; // 1 MPa (adjust based on material)
-    static constexpr float FORCE_SCALE = 0.001f; // Scale factor for force vectors
+    // Color constants (defined in ForceRenderer.cpp)
+    static const glm::vec3 TENSION_COLOR;
+    static const glm::vec3 COMPRESSION_COLOR;
+    static const glm::vec3 NEUTRAL_COLOR;
+    static constexpr float MAX_STRESS   = 1e6f;
+    static constexpr float FORCE_SCALE  = 0.001f;
 
 private:
     Shader forceShader;

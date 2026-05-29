@@ -6,19 +6,11 @@ public:
     Node(float x, float y, float z) : position(x, y, z), fixed(false), appliedForce(0.0f, 0.0f, 0.0f) {}
     
     void applyForce(const glm::vec3& force) {
-        appliedForce += force; // Accumulate applied force
+        appliedForce += force;
     }
 
     glm::vec3 getAppliedForce() const {
-        return appliedForce; // Return the applied force
-    }
-
-    void applyForce(const glm::vec3& force) {
-        appliedForce += force; // Accumulate applied force
-    }
-
-    glm::vec3 getAppliedForce() const {
-        return appliedForce; // Return the applied force
+        return appliedForce;
     }
 
     glm::vec3 getPosition() const {

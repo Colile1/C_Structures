@@ -1,8 +1,14 @@
 #include "visualization/ForceRenderer.hpp"
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <vector>
 #include <cmath>
+
+// Static color constant definitions.
+const glm::vec3 ForceRenderer::TENSION_COLOR     = {0.0f, 0.0f, 1.0f};
+const glm::vec3 ForceRenderer::COMPRESSION_COLOR = {1.0f, 0.0f, 0.0f};
+const glm::vec3 ForceRenderer::NEUTRAL_COLOR     = {0.7f, 0.7f, 0.7f};
 
 ForceRenderer::ForceRenderer() : cylinderVAO(0), cylinderVBO(0), coneVAO(0), coneVBO(0) {
 }

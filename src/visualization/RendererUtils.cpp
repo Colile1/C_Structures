@@ -1,28 +1,16 @@
 #include "RendererUtils.hpp"
-#include <GL/gl.h> // Include OpenGL header for drawing functions
+
+// RendererUtils.cpp : legacy fixed-function stubs, superseded by ForceRenderer's VAO approach.
+// These are kept as no-ops so existing call sites compile; do not use for new code.
 
 void drawArrow(glm::vec3 start, glm::vec3 end, glm::vec3 color) {
-    // Shaft
-    drawCylinder(start, end, 0.02f, color);
-    
-    // Arrowhead
-    glm::vec3 direction = glm::normalize(end - start);
-    glm::vec3 tip = end + direction * 0.1f; // Adjust the length of the arrowhead
-    drawCone(end, tip, 0.05f, color); // Assuming drawCone is defined elsewhere
+    (void)start; (void)end; (void)color;
 }
 
 void drawCylinder(const glm::vec3& start, const glm::vec3& end, float radius, glm::vec3 color) {
-    // Implement cylinder drawing logic here
-    glPushMatrix();
-    // Calculate the cylinder's position and orientation
-    // Draw cylinder using OpenGL functions
-    glPopMatrix();
+    (void)start; (void)end; (void)radius; (void)color;
 }
 
 void drawCone(const glm::vec3& base, const glm::vec3& tip, float radius, glm::vec3 color) {
-    // Implement cone drawing logic here
-    glPushMatrix();
-    // Calculate the cone's position and orientation
-    // Draw cone using OpenGL functions
-    glPopMatrix();
+    (void)base; (void)tip; (void)radius; (void)color;
 }

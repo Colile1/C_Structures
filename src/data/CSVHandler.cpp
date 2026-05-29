@@ -60,8 +60,8 @@ void CSVHandler::saveStructure(const std::string& path,
                                       n.getPosition().z == beam.getEnd()->getPosition().z; }));
 
         
-        file << "BEAM " << startIdx << " " << endIdx << " " 
-             << beam.getStiffness() << " " 
-             << beam.getLength() << "\n";
+        file << "BEAM " << startIdx << " " << endIdx << " "
+             << beam.getYoungsModulus() << " "
+             << beam.getCrossSection() << "\n";
     }
 }

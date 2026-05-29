@@ -44,7 +44,9 @@ public:
      * @return float The stiffness of the beam (AE/L).
      */
     float getStiffness() const; // AE/L
-    
+    float getYoungsModulus() const;
+    float getCrossSection() const;
+
 private:
     Node* startNode; ///< Pointer to the starting node
     Node* endNode; ///< Pointer to the ending node

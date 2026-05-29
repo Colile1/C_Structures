@@ -21,3 +21,6 @@ float Beam::getLength() const {
 float Beam::getStiffness() const {
     return (youngsModulus * crossSection) / getLength();
 }
+
+float Beam::getYoungsModulus() const { return youngsModulus; }
+float Beam::getCrossSection() const { return crossSection; }
