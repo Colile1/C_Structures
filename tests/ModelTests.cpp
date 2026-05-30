@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <glm/glm.hpp>
+#include <vector>
 #include "model/Node.hpp"
 #include "model/Beam.hpp"
 
@@ -28,21 +29,20 @@ TEST(NodeTest, FixedConstraint) {
 }
 
 TEST(BeamTest, LengthCalculation) {
-    Node a(0.0f, 0.0f, 0.0f), b(3.0f, 4.0f, 0.0f); // 5m beam
-    Beam beam(&a, &b, 2e11f, 0.01f);
-    ASSERT_FLOAT_EQ(beam.getLength(), 5.0f);
+    std::vector<Node> nodes { Node(0.0f, 0.0f, 0.0f), Node(3.0f, 4.0f, 0.0f) }; // 5m beam
+    Beam beam(0, 1, 2e11f, 0.01f);
+    ASSERT_FLOAT_EQ(beam.getLength(nodes), 5.0f);
 }
 
 TEST(BeamTest, StiffnessCalculation) {
-    Node n1(0.0f, 0.0f, 0.0f), n2(3.0f, 0.0f, 0.0f);
-    Beam beam(&n1, &n2, 2e11f, 0.01f); // E=200GPa, A=0.01m^2, L=3m
+    std::vector<Node> nodes { Node(0.0f, 0.0f, 0.0f), Node(3.0f, 0.0f, 0.0f) };
+    Beam beam(0, 1, 2e11f, 0.01f); // E=200GPa, A=0.01m^2, L=3m
     float expected = (2e11f * 0.01f) / 3.0f;
-    ASSERT_NEAR(beam.getStiffness(), expected, 1.0f);
+    ASSERT_NEAR(beam.getStiffness(nodes), expected, 1.0f);
 }
 
 TEST(BeamTest, MaterialProperties) {
-    Node n1(0.0f, 0.0f, 0.0f), n2(1.0f, 0.0f, 0.0f);
-    Beam beam(&n1, &n2, 2e11f, 0.005f);
+    Beam beam(0, 1, 2e11f, 0.005f);
     ASSERT_FLOAT_EQ(beam.getYoungsModulus(), 2e11f);
     ASSERT_FLOAT_EQ(beam.getCrossSection(),  0.005f);
 }

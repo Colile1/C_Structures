@@ -94,7 +94,7 @@ TEST(CSVHandler, BeamMaterialPropertiesPreserved) {
     nodes.emplace_back(0.0f, 0.0f, 0.0f);
     nodes.emplace_back(3.0f, 0.0f, 0.0f);
     std::vector<Beam> beams;
-    beams.emplace_back(&nodes[0], &nodes[1], 2e11f, 0.008f);
+    beams.emplace_back(0, 1, 2e11f, 0.008f);
 
     CSVHandler::saveStructure(path, nodes, beams);
 
@@ -112,8 +112,8 @@ TEST(CSVHandler, BeamStiffnessConsistentAfterLoad) {
     const std::string path = "test_stiffness_tmp.csv";
     Node a(0.0f, 0.0f, 0.0f), b(2.0f, 0.0f, 0.0f);
     std::vector<Node> nodes { a, b };
-    std::vector<Beam> origBeams { Beam(&nodes[0], &nodes[1], 2e11f, 0.01f) };
-    float origStiffness = origBeams[0].getStiffness();
+    std::vector<Beam> origBeams { Beam(0, 1, 2e11f, 0.01f) };
+    float origStiffness = origBeams[0].getStiffness(nodes);
 
     CSVHandler::saveStructure(path, nodes, origBeams);
 
@@ -122,6 +122,6 @@ TEST(CSVHandler, BeamStiffnessConsistentAfterLoad) {
     CSVHandler::loadStructure(path, loadedNodes, loadedBeams);
 
     ASSERT_EQ(loadedBeams.size(), 1u);
-    EXPECT_NEAR(loadedBeams[0].getStiffness(), origStiffness, 1.0f);
+    EXPECT_NEAR(loadedBeams[0].getStiffness(loadedNodes), origStiffness, 1.0f);
     std::remove(path.c_str());
 }

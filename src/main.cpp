@@ -166,8 +166,8 @@ static void loadTestStructure(std::vector<Node>& nodes, std::vector<Beam>& beams
     nodes.emplace_back( 2.0f, 0.0f, 0.0f);
     nodes.back().setJointType(JointType::FIXED);
     nodes.emplace_back( 0.0f, 3.0f, 0.0f); // free apex
-    beams.emplace_back(&nodes[0], &nodes[2], 2e11f, 1e-4f);
-    beams.emplace_back(&nodes[1], &nodes[2], 2e11f, 1e-4f);
+    beams.emplace_back(0, 2, 2e11f, 1e-4f);
+    beams.emplace_back(1, 2, 2e11f, 1e-4f);
     nodes[2].applyForce(glm::vec3(0.0f, -50000.0f, 0.0f));
 }
 
@@ -347,12 +347,12 @@ int main() {
         auto displacements = physics.getNodeDisplacements();
 
         for (const auto& beam : beams) {
-            int si = static_cast<int>(beam.getStart() - &nodes[0]);
-            int ei = static_cast<int>(beam.getEnd()   - &nodes[0]);
+            int si = beam.getStartIdx();
+            int ei = beam.getEndIdx();
             if (si < 0 || si >= (int)displacements.size()) continue;
             if (ei < 0 || ei >= (int)displacements.size()) continue;
-            glm::vec3 s = beam.getStart()->getPosition() + displacements[si] * dispScale;
-            glm::vec3 ep = beam.getEnd()->getPosition()  + displacements[ei] * dispScale;
+            glm::vec3 s  = nodes[si].getPosition() + displacements[si] * dispScale;
+            glm::vec3 ep = nodes[ei].getPosition() + displacements[ei] * dispScale;
             float force = physics.getBeamForce(beam);
             glm::vec3 col = ForceRenderer::getBeamColor(force, ForceRenderer::MAX_STRESS);
             drawBeam(geoShader, cylVAO, cylVC, s, ep, 0.04f, col, view, proj);

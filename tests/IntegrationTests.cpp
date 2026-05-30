@@ -16,7 +16,7 @@ TEST(Integration, SingleBeamAxialDisplacement) {
     Node n0(0.0f, 0.0f, 0.0f); n0.setFixed(true);
     Node n1(1.0f, 0.0f, 0.0f);
     std::vector<Node> nodes { n0, n1 };
-    std::vector<Beam> beams { Beam(&nodes[0], &nodes[1], 2e11f, 0.01f) };
+    std::vector<Beam> beams { Beam(0, 1, 2e11f, 0.01f) };
 
     nodes[1].applyForce(glm::vec3(10000.0f, 0.0f, 0.0f));
     Simulator sim(nodes, beams);
@@ -37,8 +37,8 @@ TEST(Integration, TwoBeamForceTransmission) {
     Node n2(2.0f, 0.0f, 0.0f);
     std::vector<Node> nodes { n0, n1, n2 };
     std::vector<Beam> beams {
-        Beam(&nodes[0], &nodes[1], 2e11f, 0.01f),
-        Beam(&nodes[1], &nodes[2], 2e11f, 0.01f)
+        Beam(0, 1, 2e11f, 0.01f),
+        Beam(1, 2, 2e11f, 0.01f)
     };
     nodes[2].applyForce(glm::vec3(5000.0f, 0.0f, 0.0f));
 
@@ -58,7 +58,7 @@ TEST(Integration, ZeroForceProducesZeroDisplacement) {
     Node n0(0.0f, 0.0f, 0.0f); n0.setFixed(true);
     Node n1(1.0f, 0.0f, 0.0f);
     std::vector<Node> nodes { n0, n1 };
-    std::vector<Beam> beams { Beam(&nodes[0], &nodes[1], 2e11f, 0.01f) };
+    std::vector<Beam> beams { Beam(0, 1, 2e11f, 0.01f) };
 
     // No force applied.
     Simulator sim(nodes, beams);
@@ -74,7 +74,7 @@ TEST(Integration, CompressionGivesNegativeBeamForce) {
     Node n0(0.0f, 0.0f, 0.0f); n0.setFixed(true);
     Node n1(1.0f, 0.0f, 0.0f);
     std::vector<Node> nodes { n0, n1 };
-    std::vector<Beam> beams { Beam(&nodes[0], &nodes[1], 2e11f, 0.01f) };
+    std::vector<Beam> beams { Beam(0, 1, 2e11f, 0.01f) };
 
     nodes[1].applyForce(glm::vec3(-5000.0f, 0.0f, 0.0f)); // compressive
     Simulator sim(nodes, beams);
@@ -94,6 +94,26 @@ TEST(Integration, ForceAccumulatesAcrossMultipleApplyCalls) {
     EXPECT_FLOAT_EQ(n.getAppliedForce().z, 350.0f);
 }
 
+// Regression for the former dangling-pointer hazard: a Beam referenced its
+// endpoints by Node*, so growing the node vector (reallocation) corrupted
+// connectivity. With integer indices, adding many nodes after a beam exists
+// must leave that beam pointing at the same physical endpoints.
+TEST(Integration, NodeVectorReallocationKeepsConnectivity) {
+    std::vector<Node> nodes;
+    nodes.emplace_back(0.0f, 0.0f, 0.0f);
+    nodes.emplace_back(3.0f, 4.0f, 0.0f); // 5 m from node 0
+    std::vector<Beam> beams { Beam(0, 1, 2e11f, 0.01f) };
+
+    const float before = beams[0].getLength(nodes);
+    for (int k = 0; k < 300; ++k)          // force at least one reallocation
+        nodes.emplace_back(static_cast<float>(k), 0.0f, 0.0f);
+
+    EXPECT_EQ(beams[0].getStartIdx(), 0);
+    EXPECT_EQ(beams[0].getEndIdx(),   1);
+    EXPECT_FLOAT_EQ(beams[0].getLength(nodes), before); // still 5 m, no corruption
+    EXPECT_FLOAT_EQ(before, 5.0f);
+}
+
 // ── CSV + Simulator pipeline ──────────────────────────────────────────────────
 
 TEST(Integration, CSVThenSimulate) {
@@ -103,7 +123,7 @@ TEST(Integration, CSVThenSimulate) {
     std::vector<Node> orig;
     orig.emplace_back(0.0f, 0.0f, 0.0f); orig.back().setFixed(true);
     orig.emplace_back(2.0f, 0.0f, 0.0f);
-    std::vector<Beam> origBeams { Beam(&orig[0], &orig[1], 2e11f, 0.01f) };
+    std::vector<Beam> origBeams { Beam(0, 1, 2e11f, 0.01f) };
     CSVHandler::saveStructure(path, orig, origBeams);
 
     std::vector<Node> loaded;
@@ -133,8 +153,8 @@ TEST(Integration, MultiBeamCSVRoundTrip) {
     nodes.emplace_back(1.0f, 0.0f, 0.0f);
     nodes.emplace_back(2.0f, 0.0f, 0.0f);
     std::vector<Beam> beams {
-        Beam(&nodes[0], &nodes[1], 2e11f, 0.01f),
-        Beam(&nodes[1], &nodes[2], 2e11f, 0.005f)
+        Beam(0, 1, 2e11f, 0.01f),
+        Beam(1, 2, 2e11f, 0.005f)
     };
     CSVHandler::saveStructure(path, nodes, beams);
 
@@ -146,6 +166,9 @@ TEST(Integration, MultiBeamCSVRoundTrip) {
     ASSERT_EQ(lb.size(), 2u) << "Should load 2 beams";
     EXPECT_TRUE(ln[0].isFixed());
     EXPECT_NEAR(lb[1].getCrossSection(), 0.005f, 1e-7f);
+    // Connectivity is stored as indices, so it survives the round-trip exactly.
+    EXPECT_EQ(lb[0].getStartIdx(), 0); EXPECT_EQ(lb[0].getEndIdx(), 1);
+    EXPECT_EQ(lb[1].getStartIdx(), 1); EXPECT_EQ(lb[1].getEndIdx(), 2);
 
     std::remove(path.c_str());
 }
