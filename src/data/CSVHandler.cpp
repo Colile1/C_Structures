@@ -19,12 +19,16 @@ void CSVHandler::loadStructure(const std::string& path,
         
         if (type == "NODE") {
             float x, y, z;
-            int fixed;
-            ss >> x >> y >> z >> fixed;
-            
+            int joint;
+            ss >> x >> y >> z >> joint;
+
             nodes.emplace_back(x, y, z);
-            nodes.back().setFixed(fixed);
-        } 
+            // joint field: 0=FREE,1=FIXED,2=PIN_XY,3=ROLLER_X,4=ROLLER_Y,5=ROLLER_Z
+            if (joint >= 0 && joint <= 5)
+                nodes.back().setJointType(static_cast<JointType>(joint));
+            else
+                nodes.back().setJointType(JointType::FREE);
+        }
         else if (type == "BEAM") {
             int startIdx, endIdx;
             float E, A;
@@ -43,13 +47,13 @@ void CSVHandler::saveStructure(const std::string& path,
                              const std::vector<Beam>& beams) {
     std::ofstream file(path);
     
-    // Save nodes
+    // Save nodes. Joint field: 0=FREE,1=FIXED,2=PIN_XY,3=ROLLER_X,4=ROLLER_Y,5=ROLLER_Z
     for (size_t i = 0; i < nodes.size(); ++i) {
         const Node& node = nodes[i];
-        file << "NODE " << node.getPosition().x << " " 
-             << node.getPosition().y << " " 
-             << node.getPosition().z << " " 
-             << (node.isFixed() ? 1 : 0) << "\n";
+        file << "NODE " << node.getPosition().x << " "
+             << node.getPosition().y << " "
+             << node.getPosition().z << " "
+             << static_cast<int>(node.getJointType()) << "\n";
     }
     
     // Save beams. Connectivity is stored directly as node indices, so the

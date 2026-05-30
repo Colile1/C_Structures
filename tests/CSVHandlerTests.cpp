@@ -16,8 +16,8 @@ static bool roundTripMatches(const std::string& path) {
     original.emplace_back(4.0f, 1.0f, 0.0f);
 
     std::vector<Beam> origBeams;
-    origBeams.emplace_back(&original[0], &original[1], 2e11f, 0.01f);
-    origBeams.emplace_back(&original[1], &original[2], 1.5e11f, 0.005f);
+    origBeams.emplace_back(0, 1, 2e11f, 0.01f);
+    origBeams.emplace_back(1, 2, 1.5e11f, 0.005f);
 
     CSVHandler::saveStructure(path, original, origBeams);
 
@@ -85,6 +85,32 @@ TEST(CSVHandler, FixedFlagPreserved) {
     ASSERT_EQ(loaded.size(), 2u);
     EXPECT_TRUE(loaded[0].isFixed());
     EXPECT_FALSE(loaded[1].isFixed());
+    std::remove(path.c_str());
+}
+
+TEST(CSVHandler, JointTypeRoundTrip) {
+    const std::string path = "test_jointtype_tmp.csv";
+    std::vector<Node> nodes;
+    nodes.emplace_back(0.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::FIXED);
+    nodes.emplace_back(1.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::PIN_XY);
+    nodes.emplace_back(2.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::ROLLER_X);
+    nodes.emplace_back(3.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::ROLLER_Y);
+    nodes.emplace_back(4.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::ROLLER_Z);
+    nodes.emplace_back(5.0f, 0.0f, 0.0f); // FREE (default)
+    std::vector<Beam> beams;
+    CSVHandler::saveStructure(path, nodes, beams);
+
+    std::vector<Node> loaded;
+    std::vector<Beam> loadedBeams;
+    CSVHandler::loadStructure(path, loaded, loadedBeams);
+
+    ASSERT_EQ(loaded.size(), 6u);
+    EXPECT_EQ(loaded[0].getJointType(), JointType::FIXED);
+    EXPECT_EQ(loaded[1].getJointType(), JointType::PIN_XY);
+    EXPECT_EQ(loaded[2].getJointType(), JointType::ROLLER_X);
+    EXPECT_EQ(loaded[3].getJointType(), JointType::ROLLER_Y);
+    EXPECT_EQ(loaded[4].getJointType(), JointType::ROLLER_Z);
+    EXPECT_EQ(loaded[5].getJointType(), JointType::FREE);
     std::remove(path.c_str());
 }
 

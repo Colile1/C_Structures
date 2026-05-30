@@ -438,8 +438,8 @@ void UIHandler::renderUI(SDL_Window* window,
 
     if (currentTool == ToolMode::BEAM_CREATION) {
         ImGui::Separator();
-        ImGui::TextColored(beamStart ? ImVec4(1.f,.85f,.2f,1.f) : ImVec4(.6f,.6f,.6f,1.f),
-                           beamStart ? "Click end node" : "Click start node");
+        ImGui::TextColored(beamStart >= 0 ? ImVec4(1.f,.85f,.2f,1.f) : ImVec4(.6f,.6f,.6f,1.f),
+                           beamStart >= 0 ? "Click end node" : "Click start node");
     }
     if (currentTool == ToolMode::FORCE_APPLICATION) {
         ImGui::Separator();
