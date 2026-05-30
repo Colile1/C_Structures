@@ -1,6 +1,10 @@
+// Copyright (c) 2026 Colile Sibanda. All rights reserved.
+// Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #include "physics/Simulator.hpp"
+#include <Eigen/SparseLU>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 
 Simulator::Simulator(std::vector<Node>& nodes, std::vector<Beam>& beams)
     : m_nodes(&nodes), m_beams(&beams) {
@@ -34,11 +38,9 @@ void Simulator::assembleGlobalStiffnessMatrix() {
         float L = glm::length(axis);
         if (L < 1e-8f) continue;
 
-        // Direction cosines
         double lx = axis.x / L, ly = axis.y / L, lz = axis.z / L;
         double AE_L = static_cast<double>(beam.getStiffness());
 
-        // 3×3 local stiffness (axial only, oriented along beam axis)
         double k[3][3] = {
             {lx*lx, lx*ly, lx*lz},
             {ly*lx, ly*ly, ly*lz},
@@ -58,57 +60,81 @@ void Simulator::assembleGlobalStiffnessMatrix() {
     m_globalK.setFromTriplets(triplets.begin(), triplets.end());
 }
 
-// Builds the fixed-DOF mask from joint types, also pins zero-stiffness DOFs
-// to prevent singularity.  Then eliminates fixed rows/cols from the sparse
-// matrix (sets them to identity rows/cols) and zeroes the corresponding
-// force entries.
-void Simulator::applySupportConstraints() {
-    const int n = static_cast<int>(m_globalK.rows());
-    std::vector<bool> fixed(n, false);
-
-    for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i) {
-        const Node& nd = (*m_nodes)[i];
-        for (int d = 0; d < 3; ++d) {
-            if (nd.isDOFConstrained(d))
-                fixed[3*i + d] = true;
-        }
-    }
-
-    // Pin DOFs with zero diagonal (unconnected or out-of-plane) to avoid singularity.
-    for (int i = 0; i < n; ++i) {
-        if (!fixed[i] && std::abs(m_globalK.coeff(i, i)) < 1e-12)
-            fixed[i] = true;
-    }
-
-    // Eliminate fixed DOFs: zero the row and column, put 1 on the diagonal.
-    for (int col = 0; col < m_globalK.outerSize(); ++col) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(m_globalK, col); it; ++it) {
-            if (fixed[it.row()] || fixed[it.col()])
-                it.valueRef() = (it.row() == it.col()) ? 1.0 : 0.0;
-        }
-    }
-
-    for (int i = 0; i < n; ++i) {
-        if (fixed[i]) m_forces[i] = 0.0;
-    }
-}
-
+// Proper static condensation: extract the free-DOF sub-system and solve it
+// directly.  This avoids the ill-conditioning of the penalty-BC approach and
+// works regardless of whether SimplicialLDLT recognises the matrix as SPD.
 void Simulator::solveStaticForces() {
     if (m_nodes->empty()) return;
+    if (m_beams->empty()) { m_displacements.setZero(); return; }
 
     populateForceVector();
     assembleGlobalStiffnessMatrix();
-    applySupportConstraints();
 
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
-    solver.compute(m_globalK);
+    const int n = static_cast<int>(m_globalK.rows());
+
+    // --- Step 1: determine fixed DOFs ----------------------------------------
+    std::vector<bool> isFixed(n, false);
+    for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i) {
+        const Node& nd = (*m_nodes)[i];
+        for (int d = 0; d < 3; ++d)
+            if (nd.isDOFConstrained(d))
+                isFixed[3*i + d] = true;
+    }
+    // Pin any DOF whose diagonal is zero (no stiffness — unstable direction).
+    for (int i = 0; i < n; ++i)
+        if (!isFixed[i] && std::abs(m_globalK.coeff(i, i)) < 1e-14)
+            isFixed[i] = true;
+
+    // --- Step 2: build free-DOF index map ------------------------------------
+    std::vector<int> freeList;
+    freeList.reserve(n);
+    std::vector<int> globalToFree(n, -1);
+    for (int i = 0; i < n; ++i) {
+        if (!isFixed[i]) {
+            globalToFree[i] = static_cast<int>(freeList.size());
+            freeList.push_back(i);
+        }
+    }
+    const int nf = static_cast<int>(freeList.size());
+    m_displacements.setZero();
+    if (nf == 0) return; // fully constrained
+
+    // --- Step 3: extract KFF and fF ------------------------------------------
+    std::vector<Eigen::Triplet<double>> sub;
+    sub.reserve(nf * 6);
+    for (int gCol : freeList) {
+        int lCol = globalToFree[gCol];
+        for (Eigen::SparseMatrix<double>::InnerIterator it(m_globalK, gCol); it; ++it) {
+            int gRow = static_cast<int>(it.row());
+            if (isFixed[gRow]) continue;
+            sub.emplace_back(globalToFree[gRow], lCol, it.value());
+        }
+    }
+    Eigen::SparseMatrix<double> Kff(nf, nf);
+    Kff.setFromTriplets(sub.begin(), sub.end());
+
+    Eigen::VectorXd ff(nf);
+    for (int li = 0; li < nf; ++li)
+        ff[li] = m_forces[freeList[li]];
+
+    // --- Step 4: solve with SparseLU -----------------------------------------
+    Kff.makeCompressed();
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    solver.compute(Kff);
     if (solver.info() != Eigen::Success) {
-        std::cerr << "Simulator: decomposition failed (structure may be a mechanism)\n";
+        std::cerr << "Simulator: factorization failed "
+                     "(structure may be a mechanism or under-constrained)\n";
         return;
     }
-    m_displacements = solver.solve(m_forces);
-    if (solver.info() != Eigen::Success)
+    Eigen::VectorXd uf = solver.solve(ff);
+    if (solver.info() != Eigen::Success) {
         std::cerr << "Simulator: solve failed\n";
+        return;
+    }
+
+    // --- Step 5: scatter back ------------------------------------------------
+    for (int li = 0; li < nf; ++li)
+        m_displacements[freeList[li]] = uf[li];
 }
 
 std::vector<glm::vec3> Simulator::getNodeDisplacements() const {

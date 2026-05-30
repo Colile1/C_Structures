@@ -57,6 +57,7 @@ target_include_directories(C_Structures PRIVATE
     ${GLEW_INCLUDE_DIRS}
     ${GLM_INCLUDE_DIRS}
     include/
+    resources/
 )
 
 target_link_libraries(C_Structures PRIVATE

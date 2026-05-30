@@ -488,6 +488,7 @@ CMakeFiles/C_Structures.dir/src/main.cpp.o: \
  /usr/include/c++/13/bits/stl_vector.h \
  /usr/include/c++/13/bits/stl_bvector.h \
  /usr/include/c++/13/bits/vector.tcc \
+ /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/resources/IconsFontAwesome6.h \
  /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/../include/model/Node.hpp \
  /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/../include/model/Beam.hpp \
  /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/../include/physics/Simulator.hpp \
@@ -725,4 +726,6 @@ CMakeFiles/C_Structures.dir/src/main.cpp.o: \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++io.h \
  /usr/include/c++/13/bits/fstream.tcc \
  /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/../include/ui/UIHandler.hpp \
+ /usr/include/c++/13/deque /usr/include/c++/13/bits/stl_deque.h \
+ /usr/include/c++/13/bits/deque.tcc \
  /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/../include/graphics/Camera.hpp

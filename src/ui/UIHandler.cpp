@@ -1,23 +1,19 @@
+// Copyright (c) 2026 Colile Sibanda. All rights reserved.
+// Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #include "ui/UIHandler.hpp"
 #include <imgui.h>
+#include "IconsFontAwesome6.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <SDL2/SDL.h>
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 void UIHandler::initialize(int w, int h) {
     screenWidth  = w;
     screenHeight = h;
-}
-
-Node* UIHandler::findNodeUnderCursor(const glm::vec3& worldPos, std::vector<Node>& nodes) {
-    Node* best = nullptr;
-    float bestDist = 0.35f;
-    for (auto& n : nodes) {
-        float d = glm::distance(n.getPosition(), worldPos);
-        if (d < bestDist) { bestDist = d; best = &n; }
-    }
-    return best;
 }
 
 glm::vec3 UIHandler::screenToWorld(int mx, int my,
@@ -34,6 +30,157 @@ glm::vec3 UIHandler::screenToWorld(int mx, int my,
     return camPos + t * rayDir;
 }
 
+glm::vec3 UIHandler::worldToScreen(const glm::vec3& w,
+                                    const glm::mat4& view,
+                                    const glm::mat4& proj) const {
+    glm::vec4 clip = proj * view * glm::vec4(w, 1.0f);
+    if (std::abs(clip.w) < 1e-6f) return {-9999, -9999, 0};
+    glm::vec3 ndc = glm::vec3(clip) / clip.w;
+    float sx = (ndc.x + 1.0f) * 0.5f * screenWidth;
+    float sy = (1.0f - ndc.y) * 0.5f * screenHeight;
+    return {sx, sy, 0.0f};
+}
+
+Node* UIHandler::findNodeUnderCursor(const glm::vec3& worldPos, std::vector<Node>& nodes) {
+    Node* best = nullptr;
+    float bestDist = 0.35f;
+    for (auto& n : nodes) {
+        float d = glm::distance(n.getPosition(), worldPos);
+        if (d < bestDist) { bestDist = d; best = &n; }
+    }
+    return best;
+}
+
+// 2-D screen-space proximity test for beam picking.
+Beam* UIHandler::findBeamUnderCursor(int mx, int my,
+                                      std::vector<Beam>& beams,
+                                      const glm::mat4& view,
+                                      const glm::mat4& proj) {
+    const float THRESH = 8.0f; // pixels
+    Beam* best = nullptr;
+    float bestD = THRESH;
+    glm::vec2 mp(static_cast<float>(mx), static_cast<float>(my));
+
+    for (auto& b : beams) {
+        glm::vec3 sa = worldToScreen(b.getStart()->getPosition(), view, proj);
+        glm::vec3 ea = worldToScreen(b.getEnd()->getPosition(),   view, proj);
+        glm::vec2 s(sa.x, sa.y), e(ea.x, ea.y);
+
+        glm::vec2 se  = e - s;
+        float     len2 = glm::dot(se, se);
+        if (len2 < 1.0f) continue;
+        float t = glm::clamp(glm::dot(mp - s, se) / len2, 0.0f, 1.0f);
+        float d = glm::length(mp - (s + t * se));
+        if (d < bestD) { bestD = d; best = &b; }
+    }
+    return best;
+}
+
+// ── Undo / redo ───────────────────────────────────────────────────────────────
+
+void UIHandler::pushSnapshot(const std::vector<Node>& nodes,
+                              const std::vector<Beam>& beams) {
+    SceneSnapshot snap;
+    snap.nodes.reserve(nodes.size());
+    for (const auto& n : nodes) {
+        glm::vec3 f = n.getAppliedForce();
+        glm::vec3 p = n.getPosition();
+        snap.nodes.push_back({p.x, p.y, p.z, n.getJointType(), f.x, f.y, f.z});
+    }
+    snap.beams.reserve(beams.size());
+    for (const auto& b : beams) {
+        int si = static_cast<int>(b.getStart() - &nodes[0]);
+        int ei = static_cast<int>(b.getEnd()   - &nodes[0]);
+        snap.beams.push_back({si, ei,
+                              b.getYoungsModulus(), b.getCrossSection(),
+                              b.getMomentOfInertia(), b.getMaterial()});
+    }
+    m_undoStack.push_back(std::move(snap));
+    if (static_cast<int>(m_undoStack.size()) > MAX_UNDO)
+        m_undoStack.pop_front();
+    m_redoStack.clear();
+}
+
+void UIHandler::applySnapshot(const SceneSnapshot& s,
+                               std::vector<Node>& nodes,
+                               std::vector<Beam>& beams) {
+    // Rebuild nodes then beams (beams need valid node pointers).
+    selectedNode = nullptr;
+    selectedBeam = nullptr;
+    beamStart    = nullptr;
+
+    nodes.clear();
+    nodes.reserve(s.nodes.size() + 32);
+    for (const auto& ns : s.nodes) {
+        nodes.emplace_back(ns.x, ns.y, ns.z);
+        nodes.back().setJointType(ns.joint);
+        nodes.back().applyForce({ns.fx, ns.fy, ns.fz});
+    }
+
+    beams.clear();
+    for (const auto& bs : s.beams) {
+        beams.emplace_back(&nodes[bs.iStart], &nodes[bs.iEnd],
+                           bs.E, bs.A);
+        beams.back().setMomentOfInertia(bs.I);
+        beams.back().setMaterial(bs.material);
+        // setMaterial overwrites E for non-CUSTOM; restore explicit E.
+        if (bs.material == BeamMaterial::CUSTOM)
+            beams.back().setYoungsModulus(bs.E);
+    }
+    needsSolveFlag = true;
+}
+
+void UIHandler::undo(std::vector<Node>& nodes, std::vector<Beam>& beams) {
+    if (m_undoStack.empty()) return;
+
+    // Push current state onto redo stack.
+    SceneSnapshot current;
+    current.nodes.reserve(nodes.size());
+    for (const auto& n : nodes) {
+        glm::vec3 f = n.getAppliedForce();
+        glm::vec3 p = n.getPosition();
+        current.nodes.push_back({p.x, p.y, p.z, n.getJointType(), f.x, f.y, f.z});
+    }
+    for (const auto& b : beams) {
+        int si = static_cast<int>(b.getStart() - &nodes[0]);
+        int ei = static_cast<int>(b.getEnd()   - &nodes[0]);
+        current.beams.push_back({si, ei,
+                                 b.getYoungsModulus(), b.getCrossSection(),
+                                 b.getMomentOfInertia(), b.getMaterial()});
+    }
+    m_redoStack.push_back(std::move(current));
+    if (static_cast<int>(m_redoStack.size()) > MAX_UNDO)
+        m_redoStack.pop_front();
+
+    applySnapshot(m_undoStack.back(), nodes, beams);
+    m_undoStack.pop_back();
+}
+
+void UIHandler::redo(std::vector<Node>& nodes, std::vector<Beam>& beams) {
+    if (m_redoStack.empty()) return;
+
+    SceneSnapshot current;
+    current.nodes.reserve(nodes.size());
+    for (const auto& n : nodes) {
+        glm::vec3 f = n.getAppliedForce();
+        glm::vec3 p = n.getPosition();
+        current.nodes.push_back({p.x, p.y, p.z, n.getJointType(), f.x, f.y, f.z});
+    }
+    for (const auto& b : beams) {
+        int si = static_cast<int>(b.getStart() - &nodes[0]);
+        int ei = static_cast<int>(b.getEnd()   - &nodes[0]);
+        current.beams.push_back({si, ei,
+                                 b.getYoungsModulus(), b.getCrossSection(),
+                                 b.getMomentOfInertia(), b.getMaterial()});
+    }
+    m_undoStack.push_back(std::move(current));
+
+    applySnapshot(m_redoStack.back(), nodes, beams);
+    m_redoStack.pop_back();
+}
+
+// ── Event handling ────────────────────────────────────────────────────────────
+
 void UIHandler::handleEvent(SDL_Event& e,
                              std::vector<Node>& nodes,
                              std::vector<Beam>& beams,
@@ -46,14 +193,14 @@ void UIHandler::handleEvent(SDL_Event& e,
         screenHeight = e.window.data2;
     }
 
-    // Let ImGui consume its events first
     if (io.WantCaptureMouse) { draggingNode = false; return; }
 
     if (e.type == SDL_MOUSEMOTION) {
         currentMouseWorldPos = screenToWorld(e.motion.x, e.motion.y, view, proj);
         if (draggingNode && selectedNode) {
             selectedNode->setPosition(
-                {currentMouseWorldPos.x, selectedNode->getPosition().y, currentMouseWorldPos.z});
+                {currentMouseWorldPos.x, selectedNode->getPosition().y,
+                 currentMouseWorldPos.z});
             needsSolveFlag = true;
         }
     }
@@ -63,12 +210,21 @@ void UIHandler::handleEvent(SDL_Event& e,
 
         switch (currentTool) {
             case ToolMode::SELECT: {
-                Node* hit = findNodeUnderCursor(wp, nodes);
-                if (hit) { selectedNode = hit; draggingNode = true; }
-                else     { selectedNode = nullptr; }
+                Node* hitNode = findNodeUnderCursor(wp, nodes);
+                if (hitNode) {
+                    selectedNode = hitNode;
+                    selectedBeam = nullptr;
+                    draggingNode = true;
+                } else {
+                    Beam* hitBeam = findBeamUnderCursor(e.button.x, e.button.y,
+                                                        beams, view, proj);
+                    selectedBeam = hitBeam;
+                    selectedNode = nullptr;
+                }
                 break;
             }
             case ToolMode::NODE_PLACEMENT:
+                pushSnapshot(nodes, beams);
                 nodes.emplace_back(wp.x, 0.0f, wp.z);
                 needsSolveFlag = true;
                 break;
@@ -78,8 +234,10 @@ void UIHandler::handleEvent(SDL_Event& e,
                     if (!beamStart) {
                         beamStart = hit;
                     } else if (hit != beamStart) {
-                        beams.emplace_back(beamStart, hit, 2e11f, 0.01f);
-                        beamStart = nullptr;
+                        pushSnapshot(nodes, beams);
+                        beams.emplace_back(beamStart, hit,
+                                           BeamMaterial::STEEL, 1e-4f);
+                        beamStart      = nullptr;
                         needsSolveFlag = true;
                     }
                 }
@@ -87,6 +245,7 @@ void UIHandler::handleEvent(SDL_Event& e,
 
             case ToolMode::FORCE_APPLICATION:
                 if (Node* hit = findNodeUnderCursor(wp, nodes)) {
+                    pushSnapshot(nodes, beams);
                     hit->applyForce(forceVector);
                     needsSolveFlag = true;
                 }
@@ -94,8 +253,10 @@ void UIHandler::handleEvent(SDL_Event& e,
         }
     }
 
-    if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT)
+    if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT) {
+        if (draggingNode) needsSolveFlag = true;
         draggingNode = false;
+    }
 
     if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT) {
         beamStart    = nullptr;
@@ -103,32 +264,70 @@ void UIHandler::handleEvent(SDL_Event& e,
     }
 
     if (!io.WantCaptureKeyboard && e.type == SDL_KEYDOWN) {
+        const bool ctrl  = (e.key.keysym.mod & KMOD_CTRL)  != 0;
+        const bool shift = (e.key.keysym.mod & KMOD_SHIFT) != 0;
+
         switch (e.key.keysym.sym) {
+            // ── Undo / Redo ──────────────────────────────────────────────────
+            case SDLK_z:
+                if (ctrl && !shift) undo(nodes, beams);
+                if (ctrl &&  shift) redo(nodes, beams);
+                break;
+            case SDLK_y:
+                if (ctrl) redo(nodes, beams);
+                break;
+
+            // ── Tool selection ───────────────────────────────────────────────
             case SDLK_1: currentTool = ToolMode::SELECT;            break;
-            case SDLK_n: currentTool = ToolMode::NODE_PLACEMENT;    break;
+            case SDLK_n:
+                if (ctrl) {
+                    pushSnapshot(nodes, beams);
+                    nodes.clear(); beams.clear();
+                    selectedNode = nullptr; selectedBeam = nullptr;
+                    beamStart    = nullptr;
+                    needsSolveFlag = true;
+                } else {
+                    currentTool = ToolMode::NODE_PLACEMENT;
+                }
+                break;
             case SDLK_b: currentTool = ToolMode::BEAM_CREATION; beamStart = nullptr; break;
-            case SDLK_f: currentTool = ToolMode::FORCE_APPLICATION; break;
-            case SDLK_ESCAPE: beamStart = nullptr; selectedNode = nullptr; draggingNode = false; break;
+            case SDLK_f: if (!ctrl) currentTool = ToolMode::FORCE_APPLICATION; break;
+
+            // ── Delete selected ──────────────────────────────────────────────
             case SDLK_DELETE:
                 if (selectedNode) {
+                    pushSnapshot(nodes, beams);
+                    Node* target = selectedNode;
                     beams.erase(
                         std::remove_if(beams.begin(), beams.end(),
-                            [&](const Beam& b){
-                                return b.getStart() == selectedNode || b.getEnd() == selectedNode;
-                            }),
-                        beams.end()
-                    );
-                    nodes.erase(
-                        std::find_if(nodes.begin(), nodes.end(),
-                            [&](const Node& n){ return &n == selectedNode; }));
+                            [target](const Beam& b){
+                                return b.getStart() == target || b.getEnd() == target;
+                            }), beams.end());
+                    nodes.erase(std::find_if(nodes.begin(), nodes.end(),
+                            [target](const Node& nd){ return &nd == target; }));
                     selectedNode   = nullptr;
+                    needsSolveFlag = true;
+                } else if (selectedBeam) {
+                    pushSnapshot(nodes, beams);
+                    Beam* target = selectedBeam;
+                    beams.erase(std::find_if(beams.begin(), beams.end(),
+                            [target](const Beam& b){ return &b == target; }));
+                    selectedBeam   = nullptr;
                     needsSolveFlag = true;
                 }
                 break;
+
+            case SDLK_ESCAPE:
+                beamStart = nullptr; selectedNode = nullptr;
+                selectedBeam = nullptr; draggingNode = false;
+                break;
+
             default: break;
         }
     }
 }
+
+// ── Rendering helpers ─────────────────────────────────────────────────────────
 
 static const char* toolLabel(ToolMode m) {
     switch (m) {
@@ -139,6 +338,8 @@ static const char* toolLabel(ToolMode m) {
     }
     return "";
 }
+
+// ── UI ────────────────────────────────────────────────────────────────────────
 
 void UIHandler::renderUI(SDL_Window* window,
                           std::vector<Node>& nodes,
@@ -152,56 +353,54 @@ void UIHandler::renderUI(SDL_Window* window,
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("New Structure", "Ctrl+N")) {
-                nodes.clear();
-                beams.clear();
-                selectedNode   = nullptr;
-                beamStart      = nullptr;
+                pushSnapshot(nodes, beams);
+                nodes.clear(); beams.clear();
+                selectedNode = nullptr; selectedBeam = nullptr;
+                beamStart    = nullptr;
                 needsSolveFlag = true;
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Alt+F4")) {
-                SDL_Event q; q.type = SDL_QUIT;
-                SDL_PushEvent(&q);
+                SDL_Event q; q.type = SDL_QUIT; SDL_PushEvent(&q);
             }
             ImGui::EndMenu();
         }
-
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Undo", "Ctrl+Z", false, canUndo())) undo(nodes, beams);
+            if (ImGui::MenuItem("Redo", "Ctrl+Y", false, canRedo())) redo(nodes, beams);
+            ImGui::EndMenu();
+        }
         if (ImGui::BeginMenu("Tools")) {
-            if (ImGui::MenuItem("Select",  "1", currentTool == ToolMode::SELECT))
+            if (ImGui::MenuItem("Select",  "1",   currentTool == ToolMode::SELECT))
                 currentTool = ToolMode::SELECT;
-            if (ImGui::MenuItem("Node",    "N", currentTool == ToolMode::NODE_PLACEMENT))
+            if (ImGui::MenuItem("Node",    "N",   currentTool == ToolMode::NODE_PLACEMENT))
                 currentTool = ToolMode::NODE_PLACEMENT;
-            if (ImGui::MenuItem("Beam",    "B", currentTool == ToolMode::BEAM_CREATION))
+            if (ImGui::MenuItem("Beam",    "B",   currentTool == ToolMode::BEAM_CREATION))
                 { currentTool = ToolMode::BEAM_CREATION; beamStart = nullptr; }
-            if (ImGui::MenuItem("Force",   "F", currentTool == ToolMode::FORCE_APPLICATION))
+            if (ImGui::MenuItem("Force",   "F",   currentTool == ToolMode::FORCE_APPLICATION))
                 currentTool = ToolMode::FORCE_APPLICATION;
             ImGui::EndMenu();
         }
-
         if (ImGui::BeginMenu("Simulation")) {
-            if (ImGui::MenuItem("Run Solver", "Enter"))
-                needsSolveFlag = true;
+            if (ImGui::MenuItem("Run Solver", "Enter")) needsSolveFlag = true;
             ImGui::EndMenu();
         }
 
-        // Mode indicator in menu bar right side
         float rightEdge = ImGui::GetContentRegionAvail().x;
-        std::string modeStr = "Mode: ";
-        modeStr += toolLabel(currentTool);
+        std::string modeStr = std::string("Mode: ") + toolLabel(currentTool);
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + rightEdge
                              - ImGui::CalcTextSize(modeStr.c_str()).x - 8.0f);
         ImGui::TextDisabled("%s", modeStr.c_str());
-
         ImGui::EndMainMenuBar();
     }
 
     // ── Left toolbar ──────────────────────────────────────────────────────────
-    const float tbW = 130.0f;
+    const float tbW = 140.0f;
     ImGui::SetNextWindowPos(ImVec2(0, menuH), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(tbW, (float)h - menuH - 24.0f), ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(0.90f);
     ImGui::Begin("##toolbar", nullptr,
-                 ImGuiWindowFlags_NoTitleBar   | ImGuiWindowFlags_NoResize |
+                 ImGuiWindowFlags_NoTitleBar   | ImGuiWindowFlags_NoResize   |
                  ImGuiWindowFlags_NoMove       | ImGuiWindowFlags_NoScrollbar |
                  ImGuiWindowFlags_NoBringToFrontOnFocus);
 
@@ -211,56 +410,59 @@ void UIHandler::renderUI(SDL_Window* window,
 
     auto toolBtn = [&](ToolMode mode, const char* icon, const char* tip, const char* key) {
         bool active = (currentTool == mode);
-        if (active)
-            ImGui::PushStyleColor(ImGuiCol_Button,
-                                  ImVec4(0.22f, 0.52f, 0.88f, 1.0f));
-        char label[32];
+        if (active) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f,0.52f,0.88f,1.0f));
+        char label[48];
         snprintf(label, sizeof(label), "%s  %s", icon, toolLabel(mode));
-        if (ImGui::Button(label, ImVec2(112, 34)))
-            currentTool = mode;
+        if (ImGui::Button(label, ImVec2(122, 34))) currentTool = mode;
         if (active) ImGui::PopStyleColor();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s  [%s]", tip, key);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s  [%s]", tip, key);
         ImGui::Spacing();
     };
 
-    toolBtn(ToolMode::SELECT,            "[S]", "Select / Drag nodes", "1");
-    toolBtn(ToolMode::NODE_PLACEMENT,    "[+]", "Place a node",        "N");
-    toolBtn(ToolMode::BEAM_CREATION,     "[=]", "Connect two nodes",   "B");
-    toolBtn(ToolMode::FORCE_APPLICATION, "[v]", "Apply force to node", "F");
+    toolBtn(ToolMode::SELECT,            ICON_FA_ARROW_POINTER, "Select / Drag nodes",  "1");
+    toolBtn(ToolMode::NODE_PLACEMENT,    ICON_FA_CIRCLE_PLUS,   "Place a node",         "N");
+    toolBtn(ToolMode::BEAM_CREATION,     ICON_FA_RULER,         "Connect two nodes",    "B");
+    toolBtn(ToolMode::FORCE_APPLICATION, ICON_FA_BOLT,          "Apply force to node",  "F");
 
-    // Beam-creation hint
     if (currentTool == ToolMode::BEAM_CREATION) {
         ImGui::Separator();
-        if (beamStart)
-            ImGui::TextColored({1.0f, 0.85f, 0.2f, 1.0f}, "Click end node");
-        else
-            ImGui::TextWrapped("Click start node");
+        ImGui::TextColored(beamStart ? ImVec4(1.f,.85f,.2f,1.f) : ImVec4(.6f,.6f,.6f,1.f),
+                           beamStart ? "Click end node" : "Click start node");
     }
-
-    // Force options
     if (currentTool == ToolMode::FORCE_APPLICATION) {
         ImGui::Separator();
         ImGui::Text("Force (N):");
         bool ch = false;
-        ch |= ImGui::DragFloat("Fx", &forceMagX, 50.f, -1e5f, 1e5f, "%.0f");
-        ch |= ImGui::DragFloat("Fy", &forceMagY, 50.f, -1e5f, 1e5f, "%.0f");
-        ch |= ImGui::DragFloat("Fz", &forceMagZ, 50.f, -1e5f, 1e5f, "%.0f");
+        ch |= ImGui::DragFloat("Fx", &forceMagX, 50.f, -1e6f, 1e6f, "%.0f");
+        ch |= ImGui::DragFloat("Fy", &forceMagY, 50.f, -1e6f, 1e6f, "%.0f");
+        ch |= ImGui::DragFloat("Fz", &forceMagZ, 50.f, -1e6f, 1e6f, "%.0f");
         if (ch) forceVector = {forceMagX, forceMagY, forceMagZ};
     }
 
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextColored({0.6f, 0.6f, 0.6f, 1.0f}, "Camera:");
-    ImGui::TextWrapped("Right-drag: orbit\nScroll: zoom");
+    // Undo/redo buttons
+    {
+        bool noUndo = !canUndo();
+        bool noRedo = !canRedo();
+        if (noUndo) ImGui::BeginDisabled();
+        if (ImGui::Button(ICON_FA_ROTATE_LEFT "  Undo", ImVec2(57,0))) undo(nodes, beams);
+        if (noUndo) ImGui::EndDisabled();
+        ImGui::SameLine();
+        if (noRedo) ImGui::BeginDisabled();
+        if (ImGui::Button(ICON_FA_ROTATE_RIGHT "  Redo", ImVec2(57,0))) redo(nodes, beams);
+        if (noRedo) ImGui::EndDisabled();
+    }
     ImGui::Spacing();
-    ImGui::TextColored({0.6f, 0.6f, 0.6f, 1.0f}, "Editing:");
-    ImGui::TextWrapped("Enter: re-solve\nDel: delete node");
-
+    ImGui::TextColored({0.6f,0.6f,0.6f,1.0f}, "Camera:");
+    ImGui::TextWrapped("R-drag: orbit\nScroll: zoom");
+    ImGui::Spacing();
+    ImGui::TextColored({0.6f,0.6f,0.6f,1.0f}, "Keys:");
+    ImGui::TextWrapped("Ctrl+Z: Undo\nCtrl+Y: Redo\nEnter: Solve\nDel: Delete");
     ImGui::End();
 
     // ── Right properties panel ─────────────────────────────────────────────────
-    const float propW = 185.0f;
+    const float propW = 210.0f;
     ImGui::SetNextWindowPos(ImVec2((float)w - propW, menuH), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(propW, (float)h - menuH - 24.0f), ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(0.90f);
@@ -268,27 +470,30 @@ void UIHandler::renderUI(SDL_Window* window,
                  ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                  ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-    ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "SCENE");
+    ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "SCENE");
     ImGui::Separator();
     ImGui::Text("Nodes : %d", (int)nodes.size());
     ImGui::Text("Beams : %d", (int)beams.size());
     ImGui::Spacing();
-    ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "DISPLAY");
+    ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "DISPLAY");
     ImGui::Separator();
-    ImGui::SliderFloat("Disp.Scale", &dispScale, 1.0f, 5000.0f, "%.0fx", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Disp.Scale", &dispScale, 1.0f, 5000.0f, "%.0fx",
+                       ImGuiSliderFlags_Logarithmic);
 
+    // ── Selected Node ──────────────────────────────────────────────────────────
     if (selectedNode) {
         ImGui::Spacing();
-        ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "SELECTED NODE");
+        ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "SELECTED NODE");
         ImGui::Separator();
 
         glm::vec3 pos = selectedNode->getPosition();
         float px = pos.x, py = pos.y, pz = pos.z;
         bool posChg = false;
-        posChg |= ImGui::DragFloat("X##p", &px, 0.05f, -100.f, 100.f, "%.2f");
-        posChg |= ImGui::DragFloat("Y##p", &py, 0.05f, -100.f, 100.f, "%.2f");
-        posChg |= ImGui::DragFloat("Z##p", &pz, 0.05f, -100.f, 100.f, "%.2f");
+        posChg |= ImGui::DragFloat("X (m)##p", &px, 0.05f, -100.f, 100.f, "%.3f");
+        posChg |= ImGui::DragFloat("Y (m)##p", &py, 0.05f, -100.f, 100.f, "%.3f");
+        posChg |= ImGui::DragFloat("Z (m)##p", &pz, 0.05f, -100.f, 100.f, "%.3f");
         if (posChg) {
+            pushSnapshot(nodes, beams);
             selectedNode->setPosition({px, py, pz});
             needsSolveFlag = true;
         }
@@ -299,37 +504,101 @@ void UIHandler::renderUI(SDL_Window* window,
         };
         int jt = static_cast<int>(selectedNode->getJointType());
         if (ImGui::Combo("Joint Type", &jt, jointNames, 6)) {
+            pushSnapshot(nodes, beams);
             selectedNode->setJointType(static_cast<JointType>(jt));
             needsSolveFlag = true;
         }
 
         glm::vec3 f = selectedNode->getAppliedForce();
-        ImGui::Text("Force: (%.0f,%.0f,%.0f)", f.x, f.y, f.z);
-
+        ImGui::Text("Force: (%.0f, %.0f, %.0f) N", f.x, f.y, f.z);
         if (ImGui::Button("Clear Force", ImVec2(-1, 0))) {
+            pushSnapshot(nodes, beams);
             selectedNode->clearForce();
             needsSolveFlag = true;
         }
         ImGui::Spacing();
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f, 0.18f, 0.18f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f,0.18f,0.18f,1.0f));
         if (ImGui::Button("Delete Node", ImVec2(-1, 0))) {
+            pushSnapshot(nodes, beams);
             Node* target = selectedNode;
-            beams.erase(
-                std::remove_if(beams.begin(), beams.end(),
-                    [target](const Beam& b){
-                        return b.getStart() == target || b.getEnd() == target;
-                    }),
-                beams.end());
-            nodes.erase(
-                std::find_if(nodes.begin(), nodes.end(),
-                    [target](const Node& n){ return &n == target; }));
+            beams.erase(std::remove_if(beams.begin(), beams.end(),
+                [target](const Beam& b){
+                    return b.getStart() == target || b.getEnd() == target;
+                }), beams.end());
+            nodes.erase(std::find_if(nodes.begin(), nodes.end(),
+                [target](const Node& n){ return &n == target; }));
             selectedNode   = nullptr;
             needsSolveFlag = true;
         }
         ImGui::PopStyleColor();
+
+    // ── Selected Beam ──────────────────────────────────────────────────────────
+    } else if (selectedBeam) {
+        ImGui::Spacing();
+        ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "SELECTED BEAM");
+        ImGui::Separator();
+
+        // Length (read-only)
+        ImGui::Text("Length: %.4f m", selectedBeam->getLength());
+        ImGui::Spacing();
+
+        // Material preset
+        static const char* matNames[] = {
+            "Steel (200 GPa)", "Aluminum (70 GPa)",
+            "Concrete (30 GPa)", "Timber (12 GPa)", "Custom"
+        };
+        int matIdx = static_cast<int>(selectedBeam->getMaterial());
+        if (ImGui::Combo("Material", &matIdx, matNames, 5)) {
+            pushSnapshot(nodes, beams);
+            selectedBeam->setMaterial(static_cast<BeamMaterial>(matIdx));
+            needsSolveFlag = true;
+        }
+        ImGui::Spacing();
+
+        // Young's modulus
+        float E = selectedBeam->getYoungsModulus();
+        float Egpa = E * 1e-9f;
+        if (ImGui::DragFloat("E (GPa)", &Egpa, 0.5f, 0.1f, 1000.0f, "%.1f")) {
+            pushSnapshot(nodes, beams);
+            selectedBeam->setYoungsModulus(Egpa * 1e9f);
+            needsSolveFlag = true;
+        }
+
+        // Cross-section area
+        float A = selectedBeam->getCrossSection();
+        float Acm2 = A * 1e4f; // m² → cm²
+        if (ImGui::DragFloat("A (cm^2)", &Acm2, 0.1f, 0.001f, 1000.0f, "%.4f")) {
+            pushSnapshot(nodes, beams);
+            selectedBeam->setCrossSection(Acm2 * 1e-4f);
+            needsSolveFlag = true;
+        }
+
+        // Second moment of area
+        float I = selectedBeam->getMomentOfInertia();
+        float Icm4 = I * 1e8f; // m⁴ → cm⁴
+        if (ImGui::DragFloat("I (cm^4)", &Icm4, 0.001f, 1e-6f, 1e6f, "%.6f")) {
+            pushSnapshot(nodes, beams);
+            selectedBeam->setMomentOfInertia(Icm4 * 1e-8f);
+        }
+        ImGui::Spacing();
+
+        // Derived stiffness
+        ImGui::Text("AE/L: %.3e N/m", static_cast<double>(selectedBeam->getStiffness()));
+        ImGui::Spacing();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f,0.18f,0.18f,1.0f));
+        if (ImGui::Button("Delete Beam", ImVec2(-1, 0))) {
+            pushSnapshot(nodes, beams);
+            Beam* target = selectedBeam;
+            beams.erase(std::find_if(beams.begin(), beams.end(),
+                [target](const Beam& b){ return &b == target; }));
+            selectedBeam   = nullptr;
+            needsSolveFlag = true;
+        }
+        ImGui::PopStyleColor();
+
     } else {
         ImGui::Spacing();
-        ImGui::TextDisabled("No node selected.\nUse Select tool\nand click a node.");
+        ImGui::TextDisabled("No selection.\nSelect tool + click\na node or beam.");
     }
 
     ImGui::End();
@@ -340,13 +609,15 @@ void UIHandler::renderUI(SDL_Window* window,
     ImGui::SetNextWindowBgAlpha(0.90f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6, 3));
     ImGui::Begin("##status", nullptr,
-                 ImGuiWindowFlags_NoTitleBar    | ImGuiWindowFlags_NoResize |
+                 ImGuiWindowFlags_NoTitleBar    | ImGuiWindowFlags_NoResize  |
                  ImGuiWindowFlags_NoMove        | ImGuiWindowFlags_NoScrollbar |
                  ImGuiWindowFlags_NoBringToFrontOnFocus);
-    ImGui::Text("Mode: %-8s  |  World (%.2f, %.2f, %.2f)  |  Nodes: %d  Beams: %d",
+    ImGui::Text("Mode: %-8s  |  (%.2f, %.2f, %.2f) m  |  Nodes: %d  Beams: %d  "
+                "| Undo: %d  Redo: %d",
                 toolLabel(currentTool),
                 currentMouseWorldPos.x, currentMouseWorldPos.y, currentMouseWorldPos.z,
-                (int)nodes.size(), (int)beams.size());
+                (int)nodes.size(), (int)beams.size(),
+                (int)m_undoStack.size(), (int)m_redoStack.size());
     ImGui::End();
     ImGui::PopStyleVar();
 }

@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Colile Sibanda. All rights reserved.
+// Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #include "graphics/Camera.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>

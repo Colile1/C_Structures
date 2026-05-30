@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Colile Sibanda. All rights reserved.
+// Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #include "data/CSVHandler.hpp"
 #include <algorithm> // Include for std::find_if and std::distance
 #include <fstream>

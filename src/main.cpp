@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Colile Sibanda. All rights reserved.
+// Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
@@ -9,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include "IconsFontAwesome6.h"
 
 #include "../include/model/Node.hpp"
 #include "../include/model/Beam.hpp"
@@ -221,6 +224,27 @@ int main() {
     style.Colors[ImGuiCol_Header]        = ImVec4(0.22f, 0.52f, 0.88f, 0.80f);
     style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.28f, 0.62f, 1.00f, 0.80f);
 
+    // Merge Font Awesome solid icons into the default font.
+    {
+        ImGuiIO& fio = ImGui::GetIO();
+        fio.Fonts->AddFontDefault();
+        static const ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+        ImFontConfig cfg;
+        cfg.MergeMode    = true;
+        cfg.PixelSnapH   = true;
+        cfg.GlyphOffset  = {0.0f, 1.0f};
+        // Try executable-relative path first, then CWD.
+        const char* fontPaths[] = {
+            "../resources/fa-solid-900.ttf",
+            "resources/fa-solid-900.ttf",
+            "fa-solid-900.ttf"
+        };
+        for (const char* p : fontPaths) {
+            if (fio.Fonts->AddFontFromFileTTF(p, 13.0f, &cfg, ranges)) break;
+        }
+        fio.Fonts->Build();
+    }
+
     ImGui_ImplSDL2_InitForOpenGL(window, glCtx);
     ImGui_ImplOpenGL3_Init("#version 330 core");
 
@@ -290,11 +314,15 @@ int main() {
                     camera.handleScroll(e.wheel.y);
             }
 
-            if (!io.WantCaptureKeyboard) {
-                if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
+            if (!io.WantCaptureKeyboard && e.type == SDL_KEYDOWN) {
+                const bool ctrl  = (e.key.keysym.mod & KMOD_CTRL)  != 0;
+                const bool shift = (e.key.keysym.mod & KMOD_SHIFT) != 0;
+                if (e.key.keysym.sym == SDLK_RETURN) {
                     physics = Simulator(nodes, beams);
                     physics.solveStaticForces();
                 }
+                // Undo/redo are handled by UIHandler; mirror Escape→clear tool
+                (void)ctrl; (void)shift;
             }
         }
 

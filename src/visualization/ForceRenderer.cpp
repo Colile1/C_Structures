@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Colile Sibanda. All rights reserved.
+// Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #include "visualization/ForceRenderer.hpp"
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
