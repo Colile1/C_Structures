@@ -20,6 +20,14 @@ public:
     // Returns signed axial force in the beam (positive = tension, negative = compression).
     float getBeamForce(const Beam& beam) const;
 
+    // Returns the support reaction at a node (non-zero only on constrained DOFs).
+    // Computed from the residual r = K*u - F after the last solve.
+    glm::vec3 getNodeReaction(int nodeIdx) const;
+
+    // Global equilibrium self-check: Σ(applied loads) + Σ(reactions) should be ≈ 0.
+    // Writes the net residual force to netResidual; returns true if within tol (N).
+    bool checkEquilibrium(glm::vec3& netResidual, float tol = 1e-2f) const;
+
 private:
     void assembleGlobalStiffnessMatrix();
     void applySupportConstraints();
@@ -30,4 +38,5 @@ private:
     Eigen::SparseMatrix<double> m_globalK;
     Eigen::VectorXd m_forces;
     Eigen::VectorXd m_displacements;
+    Eigen::VectorXd m_reactions; // r = K*u - F, cached after solve
 };

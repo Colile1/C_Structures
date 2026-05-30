@@ -5,6 +5,18 @@ Format: [YYYY-MM-DD HH:MM]
 
 ---
 
+[2026-05-30 09:15]
+**Phase 1.1 — Support reactions (Simulator + UI + tests)**
+Why: The solver computed displacements and member forces but never reported support reactions, so users had no way to confirm the model balanced. Reactions are the highest-credibility, fully verifiable truss output.
+Impact:
+- `Simulator` now caches the residual `r = K·u − F` after every solve and exposes `getNodeReaction(int)` (non-zero only on constrained DOFs) and `checkEquilibrium(net, tol)` (Σloads + Σreactions ≈ 0). Reactions are also computed for the fully-constrained case.
+- New `ui/ReactionsPanel.{hpp,cpp}`: a Dear ImGui "Reactions" window with a per-support Rx/Ry/Rz table and a green/red equilibrium tick. Display-only; reads from the solver. Wired into `main.cpp` render loop.
+- `PhysicsTests.cpp`: added `Reactions.SingleBarBalancesLoad` and `Reactions.SymmetricTrussSplit`, with reaction values independently confirmed in NumPy (−1000 N single bar; 25 kN per base on the symmetric truss). Free nodes correctly report zero reaction; equilibrium residual ≈ 0.
+- `CMakeLists.txt`: added `ReactionsPanel.cpp` to the app target and broadened the `PhysicsTests` ctest filter to also run the `PhysicsVerification*` and `Reactions*` suites (the verification suite was previously registered but not executed by ctest).
+- Verified the reaction extraction/gating and equilibrium-summation logic with a standalone C++ harness against the NumPy residuals (Eigen/glm unavailable in the analysis sandbox); full `ctest` to be run on the Windows MSYS2 build.
+
+---
+
 [2026-05-31 01:00]
 **Docs updated — starter_guide.md, .gitignore, log.md brought up to date**
 `starter_guide.md`: replaced the stale vcpkg-based build instructions with the verified MSYS2/MinGW64 workflow (Chocolatey → pacman → cmake/ninja). Added Linux/macOS apt and Homebrew equivalents. Updated Controls table to match the current UIHandler (Select/Node/Beam/Force + Undo/Redo/Delete/Ctrl+N). Updated CSV format section to document all 6 JointType integer values (was binary 0/1 only). Added `getBeamForce` to the code examples. Expanded project tree to include `resources/icons/`, `build_win/`, `build_windows.sh`, `REVIEW.md`, `IMPROVEMENT_PLAN.md`, `CSVHandlerTests.cpp`, `IntegrationTests.cpp`, `py_logic_tests.py`.

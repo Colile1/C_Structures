@@ -12,8 +12,10 @@ Simulator::Simulator(std::vector<Node>& nodes, std::vector<Beam>& beams)
     m_globalK.resize(n, n);
     m_forces.resize(n);
     m_displacements.resize(n);
+    m_reactions.resize(n);
     m_forces.setZero();
     m_displacements.setZero();
+    m_reactions.setZero();
 }
 
 void Simulator::populateForceVector() {
@@ -66,6 +68,7 @@ void Simulator::assembleGlobalStiffnessMatrix() {
 // directly.  This avoids the ill-conditioning of the penalty-BC approach and
 // works regardless of whether SimplicialLDLT recognises the matrix as SPD.
 void Simulator::solveStaticForces() {
+    m_reactions.setZero();
     if (m_nodes->empty()) return;
     if (m_beams->empty()) { m_displacements.setZero(); return; }
 
@@ -99,7 +102,10 @@ void Simulator::solveStaticForces() {
     }
     const int nf = static_cast<int>(freeList.size());
     m_displacements.setZero();
-    if (nf == 0) return; // fully constrained
+    if (nf == 0) { // fully constrained: u = 0, reactions resist all applied load
+        m_reactions = m_globalK * m_displacements - m_forces;
+        return;
+    }
 
     // --- Step 3: extract KFF and fF ------------------------------------------
     std::vector<Eigen::Triplet<double>> sub;
@@ -137,6 +143,10 @@ void Simulator::solveStaticForces() {
     // --- Step 5: scatter back ------------------------------------------------
     for (int li = 0; li < nf; ++li)
         m_displacements[freeList[li]] = uf[li];
+
+    // --- Step 6: cache reactions (residual at every DOF) ---------------------
+    // r = K*u - F. At free DOFs r ≈ 0; at constrained DOFs r is the support reaction.
+    m_reactions = m_globalK * m_displacements - m_forces;
 }
 
 std::vector<glm::vec3> Simulator::getNodeDisplacements() const {
@@ -165,4 +175,38 @@ float Simulator::getBeamForce(const Beam& beam) const {
     if (length < 1e-6f) return 0.0f;
 
     return beam.getStiffness(*m_nodes) * glm::dot(dJ - dI, axis / length);
+}
+
+// getNodeReaction
+// Purpose: report the support reaction at a node from the cached residual.
+// Inputs:  nodeIdx — node index.
+// Output:  reaction force (N); components are non-zero only on constrained DOFs.
+glm::vec3 Simulator::getNodeReaction(int nodeIdx) const {
+    glm::vec3 r(0.0f);
+    const int nNodes = static_cast<int>(m_nodes->size());
+    if (nodeIdx < 0 || nodeIdx >= nNodes) return r;
+    if (m_reactions.size() < 3 * nNodes) return r;
+
+    const Node& nd = (*m_nodes)[nodeIdx];
+    if (nd.isDOFConstrained(0)) r.x = static_cast<float>(m_reactions[3*nodeIdx+0]);
+    if (nd.isDOFConstrained(1)) r.y = static_cast<float>(m_reactions[3*nodeIdx+1]);
+    if (nd.isDOFConstrained(2)) r.z = static_cast<float>(m_reactions[3*nodeIdx+2]);
+    return r;
+}
+
+// checkEquilibrium
+// Purpose: verify global static equilibrium Σ(applied) + Σ(reactions) ≈ 0.
+// Inputs:  netResidual — out param receiving the net unbalanced force (N).
+//          tol — magnitude tolerance per axis (N).
+// Output:  true if |netResidual| components are all within tol.
+bool Simulator::checkEquilibrium(glm::vec3& netResidual, float tol) const {
+    netResidual = glm::vec3(0.0f);
+    const int nNodes = static_cast<int>(m_nodes->size());
+    for (int i = 0; i < nNodes; ++i) {
+        netResidual += (*m_nodes)[i].getAppliedForce();
+        netResidual += getNodeReaction(i);
+    }
+    return std::abs(netResidual.x) <= tol
+        && std::abs(netResidual.y) <= tol
+        && std::abs(netResidual.z) <= tol;
 }

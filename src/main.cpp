@@ -16,6 +16,7 @@
 #include "../include/model/Node.hpp"
 #include "../include/model/Beam.hpp"
 #include "../include/physics/Simulator.hpp"
+#include "../include/ui/ReactionsPanel.hpp"
 #include "../include/data/CSVHandler.hpp"
 #include "../include/visualization/ForceRenderer.hpp"
 #include "../include/ui/UIHandler.hpp"
@@ -382,6 +383,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
         ImGui::NewFrame();
 
         ui.renderUI(window, nodes, beams, dispScale);
+        renderReactionsPanel(nodes, physics);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

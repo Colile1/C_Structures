@@ -47,6 +47,7 @@ add_executable(C_Structures
     src/data/CSVHandler.cpp
     src/physics/Simulator.cpp
     src/ui/UIHandler.cpp
+    src/ui/ReactionsPanel.cpp
     src/visualization/ForceRenderer.cpp
     src/visualization/RendererUtils.cpp
     src/graphics/Camera.cpp
@@ -92,7 +93,7 @@ target_include_directories(tests PRIVATE
 )
 
 add_test(NAME ModelTests       COMMAND tests --gtest_filter=NodeTest*:BeamTest*)
-add_test(NAME PhysicsTests     COMMAND tests --gtest_filter=PhysicsEngine*)
+add_test(NAME PhysicsTests     COMMAND tests --gtest_filter=PhysicsEngine*:PhysicsVerification*:Reactions*)
 add_test(NAME CSVTests         COMMAND tests --gtest_filter=CSVHandler*)
 add_test(NAME IntegrationTests COMMAND tests --gtest_filter=Integration*)
 
