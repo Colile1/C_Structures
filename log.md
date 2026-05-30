@@ -5,6 +5,25 @@ Format: [YYYY-MM-DD HH:MM]
 
 ---
 
+[2026-05-31 04:00]
+**Phase 2.2 complete + Phase 2.3 + Phase 2.4 — 8/8 test suites, 100% passing**
+
+Phase 2.2 (diagram rendering):
+- Added `useFrameMode`, `showDiagram`, `diagramType` to `UIHandler` with an "ANALYSIS MODE" section in the Properties panel (frame mode checkbox → diagram type combo: N/Vy/Vz/T/My/Mz).
+- `main.cpp`: wired `FrameSimulator` alongside the truss `Simulator`; when frame mode is on, displacements use `getNodeTranslations()` and beam colour uses the axial end-force. Added `drawForceDiagrams()` — batches OpenGL GL_LINES (fill + profile) for the selected diagram type, auto-scales so max amplitude = 25% of average member length, colour-coded by type (yellow=Mz, cyan=My, blue=N, orange=Vy, green=Vz, purple=T).
+
+Phase 2.3 (distributed/moment loads):
+- New `physics/DistributedLoad.{hpp,cpp}`: `consistentNodalLoads()` converts UDL / triangular / concentrated-moment loads to 12-component work-equivalent nodal load vectors (Hermite shape function integration); `applyDistributedLoads()` scatters them into any 6n force vector.
+- `FrameSimulator::populateForces()` now adds CENL contributions from an attached `std::vector<DistributedLoad>` before assembling. `setDistributedLoads()` / `getDistributedLoads()` accessors added.
+- New `ui/LoadsPanel.{hpp,cpp}`: ImGui panel (shown in frame mode) for adding UDL / triangular / moment loads by beam index, direction, and intensity; live remove buttons; triggers re-solve automatically.
+- `tests/DistributedLoadTests.cpp` (4 tests): CENL formula (shear sign, moment sign verified), equilibrium about midspan, triangular split, and 4-element cantilever tip deflection vs wL⁴/(8EI) within 0.5%.
+- Bugfix: `udlLocalY` and `triLocalY` had Mz terms negated; corrected to match Hermite shape function derivation.
+
+Phase 2.4 (JointType DOF releases):
+- `FrameSimulator::isDofConstrained()` already correctly implements: FIXED restrains all 6 DOFs; all other JointTypes (PIN_XY, ROLLER_X/Y/Z, FREE) restrain only their specified translational DOFs and leave all rotations free — matching standard frame analysis support conditions. Documented with a comment explaining the rationale.
+
+---
+
 [2026-05-30 10:35]
 **Phase 2.2 (engine) — member internal forces**
 Added member internal forces calculations and tests

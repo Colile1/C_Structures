@@ -17,18 +17,37 @@ FrameSimulator::FrameSimulator(std::vector<Node>& nodes, std::vector<Beam>& beam
 }
 
 bool FrameSimulator::isDofConstrained(const Node& nd, int dof) const {
-    if (dof < 3) return nd.isDOFConstrained(dof);      // translations
-    return nd.getJointType() == JointType::FIXED;       // rotations: only FIXED
+    if (dof < 3) return nd.isDOFConstrained(dof); // translations via existing per-DOF check
+    // Rotations (dof 3=Rx, 4=Ry, 5=Rz):
+    // FIXED restrains all rotations. All other support types (pin, rollers) leave
+    // rotations free — they only restrain specific translations. An internal hinge
+    // (FREE joint) is also rotation-free. This matches standard frame analysis
+    // where roller and pin supports are moment-releases at the support node.
+    return nd.getJointType() == JointType::FIXED;
 }
 
 void FrameSimulator::populateForces() {
     m_F.setZero();
-    for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i) {
+    const int nNodes = static_cast<int>(m_nodes->size());
+    for (int i = 0; i < nNodes; ++i) {
         glm::vec3 f = (*m_nodes)[i].getAppliedForce();
         m_F[DPN*i + 0] = static_cast<double>(f.x);
         m_F[DPN*i + 1] = static_cast<double>(f.y);
         m_F[DPN*i + 2] = static_cast<double>(f.z);
-        // Rotational DOFs (3,4,5): applied moments are added in Phase 2.3.
+        // Applied nodal moments (Mx, My, Mz) can be set via Node::applyMoment (Phase 2.3+).
+    }
+
+    // Consistent equivalent nodal loads from distributed/moment loads.
+    if (!m_distLoads.empty()) {
+        const int nBeams = static_cast<int>(m_beams->size());
+        std::vector<double> Fvec(DPN * nNodes, 0.0);
+        std::vector<glm::vec3> pos(nNodes);
+        for (int i = 0; i < nNodes; ++i) pos[i] = (*m_nodes)[i].getPosition();
+        std::vector<std::pair<int,int>> conn(nBeams);
+        for (int i = 0; i < nBeams; ++i)
+            conn[i] = { (*m_beams)[i].getStartIdx(), (*m_beams)[i].getEndIdx() };
+        applyDistributedLoads(m_distLoads, pos, conn, Fvec);
+        for (int i = 0; i < DPN * nNodes; ++i) m_F[i] += Fvec[i];
     }
 }
 

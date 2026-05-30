@@ -44,9 +44,12 @@ public:
                   std::vector<Beam>& beams,
                   float& dispScale);
 
-    ToolMode  getCurrentTool()  const { return currentTool; }
-    glm::vec3 getForceVector()  const { return forceVector; }
+    ToolMode  getCurrentTool()     const { return currentTool; }
+    glm::vec3 getForceVector()     const { return forceVector; }
     bool      getShowForceLabels() const { return showForceLabels; }
+    bool      getUseFrameMode()    const { return useFrameMode; }
+    bool      getShowDiagram()     const { return showDiagram; }
+    int       getDiagramType()     const { return diagramType; }
     bool consumeNeedsSolve() { bool v = needsSolveFlag; needsSolveFlag = false; return v; }
 
     glm::vec3 currentMouseWorldPos = {};
@@ -68,7 +71,10 @@ private:
     int       beamStart     = -1;
     bool      draggingNode  = false;
     bool      needsSolveFlag = false;
-    bool      showForceLabels = true; // draw per-member force values in 3D view
+    bool      showForceLabels = true;   // draw per-member force values in 3D view
+    bool      useFrameMode    = false;  // true = FrameSimulator (6-DOF); false = truss
+    bool      showDiagram     = true;   // overlay internal-force diagram in frame mode
+    int       diagramType     = 5;      // 0=N  1=Vy  2=Vz  3=T  4=My  5=Mz
 
     glm::vec3 forceVector = {0.0f, -1000.0f, 0.0f};
     float forceMagX =  0.0f;

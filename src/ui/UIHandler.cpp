@@ -494,6 +494,25 @@ void UIHandler::renderUI(SDL_Window* window,
                        ImGuiSliderFlags_Logarithmic);
     ImGui::Checkbox("Show member forces", &showForceLabels);
 
+    // ── Analysis mode ─────────────────────────────────────────────────────────
+    ImGui::Spacing();
+    ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "ANALYSIS MODE");
+    ImGui::Separator();
+    if (ImGui::Checkbox("Frame mode (6-DOF)", &useFrameMode))
+        needsSolveFlag = true;
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Off = pin-jointed truss\nOn  = rigid-jointed frame (bending/shear/moment)");
+    if (useFrameMode) {
+        ImGui::Checkbox("Show diagram", &showDiagram);
+        if (showDiagram) {
+            static const char* dnames[] = {
+                "Axial  N", "Shear Vy", "Shear Vz",
+                "Torsion T", "Moment My", "Moment Mz"
+            };
+            ImGui::Combo("Diagram", &diagramType, dnames, 6);
+        }
+    }
+
     // Stress legend: diverging ramp with numeric end-stops (±MAX_STRESS).
     const float maxKN = ForceRenderer::MAX_STRESS * 1e-3f;
     ImGui::ColorButton("##cmp", ImVec4(1,0,0,1),

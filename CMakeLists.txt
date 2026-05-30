@@ -50,9 +50,11 @@ add_executable(C_Structures
     src/physics/FrameElement.cpp
     src/physics/FrameSimulator.cpp
     src/physics/MemberForces.cpp
+    src/physics/DistributedLoad.cpp
     src/ui/UIHandler.cpp
     src/ui/ReactionsPanel.cpp
     src/ui/ModelCheckPanel.cpp
+    src/ui/LoadsPanel.cpp
     src/visualization/ForceRenderer.cpp
     src/visualization/RendererUtils.cpp
     src/graphics/Camera.cpp
@@ -88,6 +90,7 @@ add_executable(tests
     tests/DeterminacyTests.cpp
     tests/FrameTests.cpp
     tests/MemberForcesTests.cpp
+    tests/DistributedLoadTests.cpp
     src/model/Node.cpp
     src/model/Beam.cpp
     src/physics/Simulator.cpp
@@ -95,6 +98,7 @@ add_executable(tests
     src/physics/FrameElement.cpp
     src/physics/FrameSimulator.cpp
     src/physics/MemberForces.cpp
+    src/physics/DistributedLoad.cpp
     src/data/CSVHandler.cpp
 )
 
@@ -110,7 +114,8 @@ add_test(NAME CSVTests         COMMAND tests --gtest_filter=CSVHandler*)
 add_test(NAME IntegrationTests COMMAND tests --gtest_filter=Integration*)
 add_test(NAME DeterminacyTests COMMAND tests --gtest_filter=Determinacy*)
 add_test(NAME FrameTests       COMMAND tests --gtest_filter=Frame.*)
-add_test(NAME MemberForcesTests COMMAND tests --gtest_filter=MemberForces*)
+add_test(NAME MemberForcesTests     COMMAND tests --gtest_filter=MemberForces*)
+add_test(NAME DistributedLoadTests COMMAND tests --gtest_filter=DistributedLoad*)
 
 target_link_libraries(tests PRIVATE
     GTest::GTest

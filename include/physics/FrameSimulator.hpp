@@ -7,6 +7,7 @@
 #include <vector>
 #include "../model/Node.hpp"
 #include "../model/Beam.hpp"
+#include "DistributedLoad.hpp"
 
 // physics/FrameSimulator.hpp : 3D frame solver with 6 DOF per node
 // (3 translations + 3 rotations). Builds 12x12 frame elements, assembles the
@@ -35,6 +36,10 @@ public:
     // [N1,Vy1,Vz1,T1,My1,Mz1, N2,Vy2,Vz2,T2,My2,Mz2]. Basis for force diagrams.
     std::array<float, 12> getMemberEndForces(const Beam& beam) const;
 
+    // Distributed loads (UDL / triangular / moment) applied before the next solve.
+    void setDistributedLoads(const std::vector<DistributedLoad>& loads) { m_distLoads = loads; }
+    const std::vector<DistributedLoad>& getDistributedLoads() const { return m_distLoads; }
+
 private:
     static constexpr int DPN = 6; // DOF per node
 
@@ -44,6 +49,7 @@ private:
 
     std::vector<Node>* m_nodes;
     std::vector<Beam>* m_beams;
+    std::vector<DistributedLoad> m_distLoads;
     Eigen::SparseMatrix<double> m_K;
     Eigen::VectorXd m_F;
     Eigen::VectorXd m_u;

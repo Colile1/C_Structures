@@ -17,8 +17,12 @@
 #include "../include/model/Node.hpp"
 #include "../include/model/Beam.hpp"
 #include "../include/physics/Simulator.hpp"
+#include "../include/physics/FrameSimulator.hpp"
+#include "../include/physics/FrameElement.hpp"
+#include "../include/physics/MemberForces.hpp"
 #include "../include/ui/ReactionsPanel.hpp"
 #include "../include/ui/ModelCheckPanel.hpp"
+#include "../include/ui/LoadsPanel.hpp"
 #include "../include/data/CSVHandler.hpp"
 #include "../include/visualization/ForceRenderer.hpp"
 #include "../include/ui/UIHandler.hpp"
@@ -160,8 +164,116 @@ static void drawGrid(const Shader& sh, GLuint vao, GLuint vbo,
     glBindVertexArray(0);
 }
 
-// Triangle truss: two fixed base nodes, free apex under vertical load.
-// Diagonal beams provide Y-stiffness so the -Y force produces visible deflection.
+// ── Internal-force diagram rendering ─────────────────────────────────────────
+//
+// Draws an axial/shear/moment/torsion diagram as OpenGL GL_LINES for every beam.
+// Lines are batched into a single dynamic upload for performance.
+//
+// diagType: 0=N  1=Vy  2=Vz  3=T  4=My  5=Mz
+// Diagram is drawn perpendicular to the member in the member's local y-axis
+// (for N, Vy, T, Mz) or local z-axis (for Vz, My).
+static void drawForceDiagrams(
+        const Shader& sh, GLuint vao, GLuint vbo,
+        const std::vector<Node>& nodes, const std::vector<Beam>& beams,
+        FrameSimulator& frameSim, int diagType,
+        const glm::mat4& view, const glm::mat4& proj)
+{
+    if (beams.empty()) return;
+
+    // 1. Auto-scale: target max amplitude = 25% of average member length.
+    float totalL = 0.0f, maxAbs = 0.0f;
+    const int NS = 16; // samples per member for scale calculation
+    for (const auto& beam : beams) {
+        float L = beam.getLength(nodes);
+        totalL += L;
+        auto ef  = frameSim.getMemberEndForces(beam);
+        auto pts = sampleMember(ef, L, NS);
+        for (const auto& f : pts) {
+            float v = 0.0f;
+            switch (diagType) {
+                case 0: v = f.N;  break; case 1: v = f.Vy; break;
+                case 2: v = f.Vz; break; case 3: v = f.T;  break;
+                case 4: v = f.My; break; case 5: v = f.Mz; break;
+            }
+            maxAbs = std::max(maxAbs, std::abs(v));
+        }
+    }
+    if (maxAbs < 1e-8f) return; // nothing to draw
+    float avgL  = totalL / static_cast<float>(beams.size());
+    float scale = 0.25f * avgL / maxAbs;
+
+    // 2. Collect all line segments.
+    std::vector<float> verts;
+    verts.reserve(beams.size() * NS * 12);
+
+    // Diagram colour by type (for the coloured tip-line; fill is white/dim).
+    static const glm::vec3 diagColors[6] = {
+        {0.30f, 0.70f, 1.00f}, // N  — blue
+        {1.00f, 0.60f, 0.10f}, // Vy — orange
+        {0.20f, 0.90f, 0.40f}, // Vz — green
+        {0.75f, 0.30f, 1.00f}, // T  — purple
+        {0.25f, 0.90f, 1.00f}, // My — cyan
+        {1.00f, 0.95f, 0.20f}, // Mz — yellow
+    };
+    (void)diagColors; // used below via geoShader uColor
+
+    auto push3 = [&](const glm::vec3& v){ verts.push_back(v.x); verts.push_back(v.y); verts.push_back(v.z); };
+
+    for (const auto& beam : beams) {
+        int si = beam.getStartIdx(), ei = beam.getEndIdx();
+        if (si < 0 || ei < 0 || si >= (int)nodes.size() || ei >= (int)nodes.size()) continue;
+        const glm::vec3 p1 = nodes[si].getPosition();
+        const glm::vec3 p2 = nodes[ei].getPosition();
+        float L = beam.getLength(nodes);
+        if (L < 1e-6f) continue;
+
+        // Local perpendicular axis for diagram displacement.
+        double rotL = 0.0;
+        FrameElement::Mat3 R = FrameElement::rotation(p1, p2, rotL);
+        // Row 1 = local y, row 2 = local z.
+        glm::vec3 ly = { (float)R(1,0), (float)R(1,1), (float)R(1,2) };
+        glm::vec3 lz = { (float)R(2,0), (float)R(2,1), (float)R(2,2) };
+        glm::vec3 perp = (diagType == 2 || diagType == 4) ? lz : ly;
+
+        auto ef  = frameSim.getMemberEndForces(beam);
+        auto pts = sampleMember(ef, L, NS);
+
+        glm::vec3 prevTip(0.0f);
+        for (int k = 0; k < (int)pts.size(); ++k) {
+            float t = static_cast<float>(k) / (pts.size() - 1);
+            glm::vec3 axis = p1 + t * (p2 - p1);
+
+            float v = 0.0f;
+            switch (diagType) {
+                case 0: v = pts[k].N;  break; case 1: v = pts[k].Vy; break;
+                case 2: v = pts[k].Vz; break; case 3: v = pts[k].T;  break;
+                case 4: v = pts[k].My; break; case 5: v = pts[k].Mz; break;
+            }
+            glm::vec3 tip = axis + perp * (v * scale);
+
+            // Vertical fill line: axis → tip
+            push3(axis); push3(tip);
+            // Profile segment to previous tip
+            if (k > 0) { push3(prevTip); push3(tip); }
+            prevTip = tip;
+        }
+    }
+
+    if (verts.empty()) return;
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(float), verts.data(), GL_DYNAMIC_DRAW);
+    sh.setMat4("uModel", glm::mat4(1.0f));
+    sh.setMat4("uView",  view);
+    sh.setMat4("uProjection", proj);
+    sh.setVec3("uColor", diagColors[diagType]);
+    glBindVertexArray(vao);
+    glLineWidth(2.0f);
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(verts.size() / 3));
+    glLineWidth(1.0f);
+    glBindVertexArray(0);
+}
+
 // Triangle truss: two fixed base nodes, free apex under vertical load.
 static void loadTestStructure(std::vector<Node>& nodes, std::vector<Beam>& beams) {
     nodes.emplace_back(-2.0f, 0.0f, 0.0f);
@@ -276,8 +388,11 @@ int main(int /*argc*/, char* /*argv*/[]) {
     nodes.reserve(256); // prevent pointer invalidation from reallocation
     loadTestStructure(nodes, beams);
 
-    Simulator physics(nodes, beams);
+    Simulator     physics(nodes, beams);
     physics.solveStaticForces();
+    FrameSimulator frameSim(nodes, beams);
+    std::vector<DistributedLoad> distLoads; // user-defined distributed/moment loads
+    // Frame solve deferred until the user enables frame mode.
 
     ForceRenderer forceRenderer;
     forceRenderer.initialize();
@@ -323,6 +438,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 if (e.key.keysym.sym == SDLK_RETURN) {
                     physics = Simulator(nodes, beams);
                     physics.solveStaticForces();
+                    if (ui.getUseFrameMode()) { frameSim = FrameSimulator(nodes, beams); frameSim.solve(); }
                 }
                 // Undo/redo are handled by UIHandler; mirror Escape→clear tool
                 (void)ctrl; (void)shift;
@@ -332,6 +448,11 @@ int main(int /*argc*/, char* /*argv*/[]) {
         if (ui.consumeNeedsSolve()) {
             physics = Simulator(nodes, beams);
             physics.solveStaticForces();
+            if (ui.getUseFrameMode()) {
+                frameSim = FrameSimulator(nodes, beams);
+                frameSim.setDistributedLoads(distLoads);
+                frameSim.solve();
+            }
         }
 
         int w, h;
@@ -347,7 +468,11 @@ int main(int /*argc*/, char* /*argv*/[]) {
         geoShader.use();
         drawGrid(geoShader, gridVAO, gridVBO, view, proj);
 
-        auto displacements = physics.getNodeDisplacements();
+        // Use frame translations when in frame mode, truss displacements otherwise.
+        const bool frameOn = ui.getUseFrameMode();
+        auto displacements = frameOn
+            ? frameSim.getNodeTranslations()
+            : physics.getNodeDisplacements();
 
         for (const auto& beam : beams) {
             int si = beam.getStartIdx();
@@ -356,10 +481,17 @@ int main(int /*argc*/, char* /*argv*/[]) {
             if (ei < 0 || ei >= (int)displacements.size()) continue;
             glm::vec3 s  = nodes[si].getPosition() + displacements[si] * dispScale;
             glm::vec3 ep = nodes[ei].getPosition() + displacements[ei] * dispScale;
-            float force = physics.getBeamForce(beam);
+            float force = frameOn
+                ? frameSim.getMemberEndForces(beam)[0]   // axial N at node 1 end
+                : physics.getBeamForce(beam);
             glm::vec3 col = ForceRenderer::getBeamColor(force, ForceRenderer::MAX_STRESS);
             drawBeam(geoShader, cylVAO, cylVC, s, ep, 0.04f, col, view, proj);
         }
+
+        // Internal-force diagram overlay (frame mode only).
+        if (frameOn && ui.getShowDiagram())
+            drawForceDiagrams(geoShader, gridVAO, gridVBO, nodes, beams,
+                              frameSim, ui.getDiagramType(), view, proj);
 
         for (int i = 0; i < (int)nodes.size(); ++i) {
             if (i >= (int)displacements.size()) break;
@@ -387,6 +519,13 @@ int main(int /*argc*/, char* /*argv*/[]) {
         ui.renderUI(window, nodes, beams, dispScale);
         renderReactionsPanel(nodes, physics);
         renderModelCheckPanel(nodes, beams);
+        if (frameOn) {
+            if (renderLoadsPanel(distLoads, frameSim, beams)) {
+                frameSim = FrameSimulator(nodes, beams);
+                frameSim.setDistributedLoads(distLoads);
+                frameSim.solve();
+            }
+        }
 
         // Per-member force labels at deformed beam midpoints (toggleable).
         if (ui.getShowForceLabels()) {
