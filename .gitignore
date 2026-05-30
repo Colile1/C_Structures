@@ -1,61 +1,64 @@
-# Build output
+# ── Build output ─────────────────────────────────────────────────
 build/
-*.o
-*.a
-*.so
-*.dylib
+build_win/
+build_linux/
+build_mac/
+out/
 
-# CMake generated
+# ── CMake generated (in-source, legacy) ──────────────────────────
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 CTestTestfile.cmake
+DartConfiguration.tcl
 Makefile
 *.cmake
 !CMakeLists.txt
 
-# IDE
+# ── Compiled binaries and libraries ──────────────────────────────
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.o
+*.obj
+*.d
+*.pdb
+
+# Named binaries (if placed in repo root by accident)
+C_Structures
+tests
+
+# ── Runtime temporaries ───────────────────────────────────────────
+imgui.ini
+*.tmp
+test_*_tmp.csv
+integration_*_tmp.csv
+
+# ── IDE and editor ────────────────────────────────────────────────
 .vscode/
 .idea/
+.vs/
 *.swp
 *.swo
 *.suo
 *.user
-.vs/
+*.ncb
+*.sdf
 
-# OS
+# ── OS artefacts ──────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 desktop.ini
+ehthumbs.db
 
-# Compiled binaries
-C_Structures
-C_Structures.exe
-tests
-tests.exe
-
-# Auto-generated dependency files
-*.d
-
-# Runtime temporaries
-imgui.ini
-integration_sim_tmp.csv
-integration_multi_tmp.csv
-*.tmp
-
-# Windows / WSL binaries
-*.exe
-*.dll
-*.out
-
-# Meta / internal docs
+# ── Internal / meta docs (kept local, not published) ─────────────
 .claude/
-.sixth/
+.vscode/
+.github/
 rules.md
 plan.md
 todo.md
-log.md
-starter_guide.md
-architecture.md
-physics_notes.md
-file_tree.txt
+# log.md

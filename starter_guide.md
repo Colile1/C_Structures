@@ -11,38 +11,102 @@ C_Structures is a real-time 3D structural analysis simulator. You can build a tr
 
 ## Prerequisites
 
-| Dependency | Version | Install |
+### Windows (MSYS2 — recommended, tested)
+
+1. Install [Chocolatey](https://chocolatey.org/install) if you don't have it, then:
+
+```powershell
+choco install msys2 -y
+```
+
+2. Open **MSYS2 MinGW64** shell (`C:\tools\msys64\msys2_shell.cmd -mingw64`) and run:
+
+```bash
+pacman -Sy --noconfirm
+pacman -S --noconfirm --needed \
+  mingw-w64-x86_64-gcc \
+  mingw-w64-x86_64-cmake \
+  mingw-w64-x86_64-ninja \
+  mingw-w64-x86_64-SDL2 \
+  mingw-w64-x86_64-eigen3 \
+  mingw-w64-x86_64-glm \
+  mingw-w64-x86_64-glew \
+  mingw-w64-x86_64-gtest
+```
+
+### Linux (apt)
+
+```bash
+sudo apt install build-essential cmake ninja-build \
+  libsdl2-dev libeigen3-dev libglm-dev libglew-dev libgtest-dev
+```
+
+### macOS (Homebrew)
+
+```bash
+brew install cmake ninja sdl2 eigen glm glew googletest
+```
+
+| Dependency | Version | Notes |
 |---|---|---|
-| CMake | ≥ 3.12 | `winget install cmake` / apt |
-| SDL2 | ≥ 2.0 | `vcpkg install sdl2` |
-| GLEW | any | `vcpkg install glew` |
-| Eigen3 | ≥ 3.4 | `vcpkg install eigen3` |
-| GLM | ≥ 0.9.9 | `vcpkg install glm` |
-| GTest | any | `vcpkg install gtest` |
-| C++17 compiler | — | MSVC 2019+ / GCC 9+ / Clang 9+ |
+| CMake | ≥ 3.14 | Required by FetchContent |
+| SDL2 | ≥ 2.0 | Windowing and input |
+| GLEW | any | OpenGL extension loader |
+| Eigen3 | ≥ 3.4 | Sparse matrix solver |
+| GLM | ≥ 0.9.9 | Vector/matrix math |
+| GTest | any | Unit test runner |
+| C++17 compiler | — | GCC 9+ / Clang 9+ / MSVC 2019+ |
+
+ImGui v1.91.5 is fetched automatically by CMake at configure time — no manual install needed.
 
 ---
 
 ## Building
 
+### Windows (MSYS2 MinGW64 shell)
+
 ```bash
-# From the C_Structures/ project directory:
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=<path/to/vcpkg>/scripts/buildsystems/vcpkg.cmake
-cmake --build build --config Release
+cd /c/Users/<you>/Documents/claude/Projects/C_Structures/C_Structures
+mkdir build_win && cd build_win
+cmake .. -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_COMPILER=g++ \
+  -DCMAKE_PREFIX_PATH=/mingw64
+ninja -j4
 ```
 
-On Linux/Mac without vcpkg, ensure the libraries are system-installed and run:
+Or just run the helper script from the project root:
+
 ```bash
-cmake -B build && cmake --build build
+bash build_windows.sh
+```
+
+### Linux / macOS
+
+```bash
+mkdir build && cd build
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+ninja -j$(nproc)
 ```
 
 ---
 
 ## Running the Application
 
+**Windows** — from the MSYS2 MinGW64 shell (so SDL2/GLEW DLLs are on PATH):
+
 ```bash
-./build/C_Structures         # Linux/Mac
-build\Release\C_Structures.exe  # Windows
+cd build_win
+./C_Structures.exe
+```
+
+Or copy `C:\tools\msys64\mingw64\bin\SDL2.dll` and `glew32.dll` next to `C_Structures.exe`
+and double-click it in Explorer.
+
+**Linux/macOS:**
+
+```bash
+./build/C_Structures
 ```
 
 A window opens with a test structure pre-loaded (two beams with a downward force applied).
@@ -52,14 +116,15 @@ A window opens with a test structure pre-loaded (two beams with a downward force
 ## Running the Tests
 
 ```bash
-cd build
-ctest --verbose
-# or directly:
-./tests        # Linux/Mac
-Release\tests.exe  # Windows
+# Windows (MSYS2 shell)
+cd build_win && ctest --output-on-failure -V
+
+# Linux/macOS
+cd build && ctest --output-on-failure -V
 ```
 
-All tests should pass.
+Expected output: **100% tests passed, 0 tests failed out of 4** (22 individual tests across
+ModelTests, PhysicsTests, CSVTests, IntegrationTests).
 
 ---
 
@@ -69,33 +134,55 @@ All tests should pass.
 |---|---|
 | Orbit camera | Right-click + drag |
 | Zoom | Scroll wheel |
-| Switch to Node tool | Click **Nodes** button or press `N` |
-| Switch to Beam tool | Click **Beams** button or press `B` |
-| Switch to Force tool | Click **Forces** button or press `F` |
+| Select mode | Click **Select** button or press `1` |
+| Node placement mode | Click **Node** button or press `N` |
+| Beam creation mode | Click **Beam** button or press `B` |
+| Force application mode | Click **Force** button or press `F` |
 | Place a node | Node tool + left-click on 3D grid |
-| Create a beam | Beam tool + left-click first node, then second |
+| Create a beam | Beam tool + left-click first node, then second node |
 | Apply force | Force tool + left-click a free node |
-| Re-run solver | Press `Enter` |
-| Cancel beam selection | Right-click or press `Escape` |
-| Quit | Press `Escape` (when no beam selected) |
+| Drag a node | Select tool + left-click and drag |
+| Delete selected | `Delete` key |
+| Undo | `Ctrl+Z` |
+| Redo | `Ctrl+Y` or `Ctrl+Shift+Z` |
+| Re-run solver | Press `Enter` (or menu Simulation → Run Solver) |
+| New structure | `Ctrl+N` |
+| Cancel beam selection | Right-click or `Escape` |
 
 ---
 
-## Loading a Structure from CSV
+## CSV File Format
 
-Place a CSV file in the project directory with this format:
+Save and load structures with `CSVHandler`. The format is:
+
+```
+NODE x y z joint
+BEAM startIdx endIdx E A
+```
+
+**joint** encodes the support type as an integer:
+
+| Value | Type | Description |
+|---|---|---|
+| 0 | FREE | No constraint (internal node) |
+| 1 | FIXED | All three translations fixed |
+| 2 | PIN_XY | Ux = Uy = 0, Uz free |
+| 3 | ROLLER_X | Ux = 0 only |
+| 4 | ROLLER_Y | Uy = 0 only |
+| 5 | ROLLER_Z | Uz = 0 only |
+
+Example:
 
 ```
 NODE 0.0 0.0 0.0 1
 NODE 2.0 0.0 0.0 0
+NODE 4.0 0.0 0.0 0
 BEAM 0 1 200000000000 0.01
+BEAM 1 2 200000000000 0.01
 ```
 
-- `NODE x y z fixed` — fixed=1 pins the node, fixed=0 leaves it free
-- `BEAM startIdx endIdx E A` — E in Pa, A in m²
-
-CSV loading is currently triggered programmatically via `CSVHandler::loadStructure()`.
-A UI button for load/save is on the roadmap (see `todo.md`).
+`BEAM` connectivity is stored as node **indices** (not positions), so it survives position
+edits and CSV round-trips exactly.
 
 ---
 
@@ -104,42 +191,57 @@ A UI button for load/save is on the roadmap (see `todo.md`).
 ```
 C_Structures/
 ├── include/
+│   ├── data/           CSVHandler.hpp
 │   ├── graphics/       Shader.hpp, Camera.hpp
 │   ├── model/          Node.hpp, Beam.hpp
 │   ├── physics/        Simulator.hpp
 │   ├── ui/             UIHandler.hpp
 │   └── visualization/  ForceRenderer.hpp
 ├── src/
+│   ├── data/           CSVHandler.cpp
 │   ├── graphics/       Camera.cpp
 │   ├── model/          Node.cpp, Beam.cpp
 │   ├── physics/        Simulator.cpp
 │   ├── ui/             UIHandler.cpp
 │   ├── visualization/  ForceRenderer.cpp, RendererUtils.cpp
 │   └── main.cpp
-├── shaders/            force_vertex.glsl, force_fragment.glsl
-├── tests/              ModelTests.cpp, PhysicsTests.cpp, test_main.cpp
+├── resources/
+│   ├── icons/          SVG icon library (symbols/, realistic/2d/, realistic/3d/)
+│   └── IconsFontAwesome6.h
+├── tests/
+│   ├── ModelTests.cpp
+│   ├── PhysicsTests.cpp
+│   ├── CSVHandlerTests.cpp
+│   ├── IntegrationTests.cpp
+│   ├── py_logic_tests.py
+│   └── test_main.cpp
+├── build_win/          Windows build output (git-ignored)
+├── build/              Linux build output (git-ignored)
 ├── CMakeLists.txt
-├── todo.md
+├── build_windows.sh    One-shot Windows build helper
+├── REVIEW.md           Full project audit
+├── IMPROVEMENT_PLAN.md Five-phase improvement roadmap
 ├── log.md
 └── starter_guide.md    (this file)
 ```
 
 ---
 
-## Testing Individual Components
+## Quick Code Examples
 
 ```cpp
-// Test Node force accumulation
-Node n(0,0,0);
-n.applyForce({100,0,0});
+// Force accumulation on a node
+Node n(0, 0, 0);
+n.applyForce({100, 0, 0});
 assert(n.getAppliedForce().x == 100.0f);
 
-// Test Simulator
+// Run the solver
 Simulator sim(nodes, beams);
 sim.solveStaticForces();
 auto disp = sim.getNodeDisplacements(); // vector of glm::vec3
+float axialForce = sim.getBeamForce(beams[0]); // + = tension, - = compression
 
-// Test CSV round-trip
+// CSV round-trip
 CSVHandler::saveStructure("out.csv", nodes, beams);
 CSVHandler::loadStructure("out.csv", nodes2, beams2);
 ```

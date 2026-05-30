@@ -171,7 +171,7 @@ static void loadTestStructure(std::vector<Node>& nodes, std::vector<Beam>& beams
     nodes[2].applyForce(glm::vec3(0.0f, -50000.0f, 0.0f));
 }
 
-int main() {
+int main(int /*argc*/, char* /*argv*/[]) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::cerr << "SDL_Init: " << SDL_GetError() << "\n"; return 1;
     }
