@@ -172,6 +172,30 @@ glm::vec3 FrameSimulator::getNodeReactionMoment(int nodeIdx) const {
     return m;
 }
 
+std::array<float, 12> FrameSimulator::getMemberEndForces(const Beam& beam) const {
+    std::array<float, 12> out{};
+    const int nNodes = static_cast<int>(m_nodes->size());
+    const int i = beam.getStartIdx(), j = beam.getEndIdx();
+    if (i < 0 || j < 0 || i >= nNodes || j >= nNodes || i == j) return out;
+
+    Eigen::Matrix<double, 12, 1> ue;
+    for (int d = 0; d < DPN; ++d) {
+        ue[d]       = m_u[DPN*i + d];
+        ue[DPN + d] = m_u[DPN*j + d];
+    }
+    const double E  = beam.getYoungsModulus();
+    const double A  = beam.getCrossSection();
+    const double I  = beam.getMomentOfInertia();
+    const double G  = E / (2.0 * (1.0 + 0.3));
+    const double J  = 2.0 * I;
+
+    FrameElement::Vec12 p = FrameElement::localEndForces(
+        (*m_nodes)[i].getPosition(), (*m_nodes)[j].getPosition(),
+        E, A, G, J, I, I, ue);
+    for (int k = 0; k < 12; ++k) out[k] = static_cast<float>(p[k]);
+    return out;
+}
+
 bool FrameSimulator::checkForceEquilibrium(glm::vec3& netResidual, float tol) const {
     netResidual = glm::vec3(0.0f);
     for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i) {

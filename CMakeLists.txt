@@ -49,6 +49,7 @@ add_executable(C_Structures
     src/physics/Determinacy.cpp
     src/physics/FrameElement.cpp
     src/physics/FrameSimulator.cpp
+    src/physics/MemberForces.cpp
     src/ui/UIHandler.cpp
     src/ui/ReactionsPanel.cpp
     src/ui/ModelCheckPanel.cpp
@@ -86,12 +87,14 @@ add_executable(tests
     tests/IntegrationTests.cpp
     tests/DeterminacyTests.cpp
     tests/FrameTests.cpp
+    tests/MemberForcesTests.cpp
     src/model/Node.cpp
     src/model/Beam.cpp
     src/physics/Simulator.cpp
     src/physics/Determinacy.cpp
     src/physics/FrameElement.cpp
     src/physics/FrameSimulator.cpp
+    src/physics/MemberForces.cpp
     src/data/CSVHandler.cpp
 )
 
@@ -107,6 +110,7 @@ add_test(NAME CSVTests         COMMAND tests --gtest_filter=CSVHandler*)
 add_test(NAME IntegrationTests COMMAND tests --gtest_filter=Integration*)
 add_test(NAME DeterminacyTests COMMAND tests --gtest_filter=Determinacy*)
 add_test(NAME FrameTests       COMMAND tests --gtest_filter=Frame.*)
+add_test(NAME MemberForcesTests COMMAND tests --gtest_filter=MemberForces*)
 
 target_link_libraries(tests PRIVATE
     GTest::GTest

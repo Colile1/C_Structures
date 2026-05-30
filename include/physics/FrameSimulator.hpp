@@ -3,6 +3,7 @@
 #pragma once
 #include <Eigen/Sparse>
 #include <glm/glm.hpp>
+#include <array>
 #include <vector>
 #include "../model/Node.hpp"
 #include "../model/Beam.hpp"
@@ -29,6 +30,10 @@ public:
 
     // Global equilibrium self-check on forces (Σloads + Σreaction forces ≈ 0).
     bool checkForceEquilibrium(glm::vec3& netResidual, float tol = 1e-2f) const;
+
+    // Member-end forces in local coordinates after the last solve:
+    // [N1,Vy1,Vz1,T1,My1,Mz1, N2,Vy2,Vz2,T2,My2,Mz2]. Basis for force diagrams.
+    std::array<float, 12> getMemberEndForces(const Beam& beam) const;
 
 private:
     static constexpr int DPN = 6; // DOF per node

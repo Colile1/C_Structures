@@ -13,6 +13,7 @@ namespace FrameElement {
 
 using Mat12 = Eigen::Matrix<double, 12, 12>;
 using Mat3  = Eigen::Matrix<double, 3, 3>;
+using Vec12 = Eigen::Matrix<double, 12, 1>;
 
 // localStiffness
 // Purpose: build the 12x12 stiffness matrix in the element's local frame.
@@ -35,5 +36,15 @@ Mat3 rotation(const glm::vec3& p1, const glm::vec3& p2, double& outLength);
 Mat12 globalStiffness(const glm::vec3& p1, const glm::vec3& p2,
                       double E, double A, double G, double J,
                       double Iy, double Iz);
+
+// localEndForces
+// Purpose: member-end forces in local coordinates, p = k_local · T · u_global.
+//          Used to derive axial/shear/moment/torsion diagrams.
+// Inputs:  p1, p2 positions; section/material props; uGlobalElem the element's
+//          12 global DOFs ([node1 6][node2 6]).
+// Output:  12-vector [N1,Vy1,Vz1,T1,My1,Mz1, N2,Vy2,Vz2,T2,My2,Mz2] (local).
+Vec12 localEndForces(const glm::vec3& p1, const glm::vec3& p2,
+                     double E, double A, double G, double J,
+                     double Iy, double Iz, const Vec12& uGlobalElem);
 
 } // namespace FrameElement

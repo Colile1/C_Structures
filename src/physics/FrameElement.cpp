@@ -71,4 +71,17 @@ Mat12 globalStiffness(const glm::vec3& p1, const glm::vec3& p2,
     return T.transpose() * k * T;
 }
 
+Vec12 localEndForces(const glm::vec3& p1, const glm::vec3& p2,
+                     double E, double A, double G, double J,
+                     double Iy, double Iz, const Vec12& uGlobalElem) {
+    double L = 0.0;
+    Mat3 R = rotation(p1, p2, L);
+    if (L < 1e-12) return Vec12::Zero();
+
+    Mat12 T = Mat12::Zero();
+    for (int b = 0; b < 4; ++b) T.block<3,3>(3*b, 3*b) = R;
+    Mat12 k = localStiffness(L, E, A, G, J, Iy, Iz);
+    return k * (T * uGlobalElem); // local end forces
+}
+
 } // namespace FrameElement

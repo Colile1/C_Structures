@@ -5,6 +5,25 @@ Format: [YYYY-MM-DD HH:MM]
 
 ---
 
+[2026-05-30 10:35]
+**Phase 2.2 (engine) — member internal forces**
+Added member internal forces calculations and tests
+
+- Implemented `FrameElement::localEndForces` to compute member-end forces in local coordinates.
+- Added `FrameSimulator::getMemberEndForces` to retrieve local end forces for a given beam.
+- Introduced new module `MemberForces` with functions for deriving internal-force diagrams along frame members.
+- Created tests for member forces in 
+
+Why: With the frame solver in place, the headline teaching output is the per-member axial/shear/moment/torsion distribution. This step adds the verified engine that produces that data; the on-screen diagram overlay follows once the frame mode is wired into the app.
+Impact:
+- `FrameElement::localEndForces` returns the member-end force vector p = k_local · T · u (local coordinates).
+- `FrameSimulator::getMemberEndForces(beam)` gathers an element's 12 global DOFs and returns its local end forces as a float[12].
+- New pure module `physics/MemberForces.{hpp,cpp}`: `memberInternalAt(p, L, x)` and `sampleMember(...)` give axial/shear/moment/torsion at any station via a left-segment free body. Sign conventions for both bending planes (Mz and My) were verified in NumPy against the cantilever (|M| = P·L at the support, 0 at the tip).
+- `tests/MemberForcesTests.cpp`: cantilever moment diagram (PL → PL/2 → 0, constant shear P) and axial-only member (constant N = P, zero shear/moment). Wired into CMake and a new `MemberForcesTests` ctest entry.
+- Remaining for 2.2: render the diagrams in the 3D view, which depends on wiring the truss/frame mode toggle into `main.cpp`.
+
+---
+
 [2026-05-30 10:10]
 **Phase 2.1 — 6-DOF 3D frame element and solver**
 Why: The truss solver only carries axial force, so the README's bending/shear/moment promise had no engine behind it. Phase 2.1 adds the rigid-jointed frame element that makes bending and torsion real, while leaving the pin-jointed truss solver intact for teaching.
