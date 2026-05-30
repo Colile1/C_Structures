@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/build_meta.cpp" "CMakeFiles/C_Structures.dir/src/build_meta.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/build_meta.cpp.o.d"
   "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/data/CSVHandler.cpp" "CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o.d"
   "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/graphics/Camera.cpp" "CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o.d"
   "/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/src/main.cpp" "CMakeFiles/C_Structures.dir/src/main.cpp.o" "gcc" "CMakeFiles/C_Structures.dir/src/main.cpp.o.d"

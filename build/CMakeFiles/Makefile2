@@ -85,7 +85,7 @@ clean: CMakeFiles/tests.dir/clean
 CMakeFiles/imgui_lib.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/imgui_lib.dir/build.make CMakeFiles/imgui_lib.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/imgui_lib.dir/build.make CMakeFiles/imgui_lib.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=11,12,13,14,15,16,17 "Built target imgui_lib"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=12,13,14,15,16,17,18 "Built target imgui_lib"
 .PHONY : CMakeFiles/imgui_lib.dir/all
 
 # Build rule for subdir invocation for target.
@@ -111,12 +111,12 @@ CMakeFiles/imgui_lib.dir/clean:
 CMakeFiles/C_Structures.dir/all: CMakeFiles/imgui_lib.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10 "Built target C_Structures"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11 "Built target C_Structures"
 .PHONY : CMakeFiles/C_Structures.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/C_Structures.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles 17
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles 18
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/C_Structures.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles 0
 .PHONY : CMakeFiles/C_Structures.dir/rule
@@ -137,7 +137,7 @@ CMakeFiles/C_Structures.dir/clean:
 CMakeFiles/tests.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests.dir/build.make CMakeFiles/tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=18,19,20,21,22,23,24,25,26,27 "Built target tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/c/Users/Colile/Documents/claude/Projects/C_Structures/C_Structures/build/CMakeFiles --progress-num=19,20,21,22,23,24,25,26,27,28 "Built target tests"
 .PHONY : CMakeFiles/tests.dir/all
 
 # Build rule for subdir invocation for target.

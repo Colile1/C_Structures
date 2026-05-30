@@ -309,6 +309,30 @@ _deps/imgui-src/imgui_widgets.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/imgui_lib.dir/build.make CMakeFiles/imgui_lib.dir/_deps/imgui-src/imgui_widgets.cpp.s
 .PHONY : _deps/imgui-src/imgui_widgets.cpp.s
 
+src/build_meta.o: src/build_meta.cpp.o
+.PHONY : src/build_meta.o
+
+# target to build an object file
+src/build_meta.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/build_meta.cpp.o
+.PHONY : src/build_meta.cpp.o
+
+src/build_meta.i: src/build_meta.cpp.i
+.PHONY : src/build_meta.i
+
+# target to preprocess a source file
+src/build_meta.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/build_meta.cpp.i
+.PHONY : src/build_meta.cpp.i
+
+src/build_meta.s: src/build_meta.cpp.s
+.PHONY : src/build_meta.s
+
+# target to generate assembly for a file
+src/build_meta.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_Structures.dir/build.make CMakeFiles/C_Structures.dir/src/build_meta.cpp.s
+.PHONY : src/build_meta.cpp.s
+
 src/data/CSVHandler.o: src/data/CSVHandler.cpp.o
 .PHONY : src/data/CSVHandler.o
 
@@ -687,6 +711,9 @@ help:
 	@echo "... _deps/imgui-src/imgui_widgets.o"
 	@echo "... _deps/imgui-src/imgui_widgets.i"
 	@echo "... _deps/imgui-src/imgui_widgets.s"
+	@echo "... src/build_meta.o"
+	@echo "... src/build_meta.i"
+	@echo "... src/build_meta.s"
 	@echo "... src/data/CSVHandler.o"
 	@echo "... src/data/CSVHandler.i"
 	@echo "... src/data/CSVHandler.s"

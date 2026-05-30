@@ -37,6 +37,17 @@ tests.exe
 # Auto-generated dependency files
 *.d
 
+# Runtime temporaries
+imgui.ini
+integration_sim_tmp.csv
+integration_multi_tmp.csv
+*.tmp
+
+# Windows / WSL binaries
+*.exe
+*.dll
+*.out
+
 # Meta / internal docs
 .claude/
 .sixth/
@@ -45,3 +56,6 @@ plan.md
 todo.md
 log.md
 starter_guide.md
+architecture.md
+physics_notes.md
+file_tree.txt

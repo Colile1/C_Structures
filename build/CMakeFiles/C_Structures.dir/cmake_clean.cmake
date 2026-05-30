@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/C_Structures.dir/src/build_meta.cpp.o"
+  "CMakeFiles/C_Structures.dir/src/build_meta.cpp.o.d"
   "CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o"
   "CMakeFiles/C_Structures.dir/src/data/CSVHandler.cpp.o.d"
   "CMakeFiles/C_Structures.dir/src/graphics/Camera.cpp.o"
