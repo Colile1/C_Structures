@@ -93,15 +93,27 @@ ninja -j$(nproc)
 
 ## Running the Application
 
-**Windows** — from the MSYS2 MinGW64 shell (so SDL2/GLEW DLLs are on PATH):
+**Windows — from the VS Code PowerShell terminal** (open the project in VS Code, then
+open a new terminal with `` Ctrl+` `` and make sure it says **PowerShell** in the dropdown):
 
-```bash
-cd build_win
-./C_Structures.exe
+```powershell
+.\build_win\C_Structures.exe
 ```
 
-Or copy `C:\tools\msys64\mingw64\bin\SDL2.dll` and `glew32.dll` next to `C_Structures.exe`
-and double-click it in Explorer.
+Or if the terminal is not already in the project folder:
+
+```powershell
+cd "C:\Users\Colile\Documents\claude\Projects\C_Structures\C_Structures"
+.\build_win\C_Structures.exe
+```
+
+You can also double-click `build_win\C_Structures.exe` in Windows Explorer.
+
+The required DLLs (`SDL2.dll`, `glew32.dll`, `libgcc_s_seh-1.dll`, `libstdc++-6.dll`,
+`libwinpthread-1.dll`) are already copied into `build_win/` — no extra setup needed.
+
+> **Do NOT run from the VS Code WSL/Git Bash terminal** — those cannot open native Win32
+> OpenGL windows and the process will silently exit. Always use the **PowerShell** terminal.
 
 **Linux/macOS:**
 
