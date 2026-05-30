@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C_Structures — Icon Library</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#1f2a37;--mut:#64748b;--line:#e2e8f0;--accent:#2563eb;}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{position:sticky;top:0;background:rgba(244,246,249,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:18px 24px;z-index:5}
+h1{margin:0 0 4px;font-size:20px} .sub{color:var(--mut);font-size:13px;margin:0 0 12px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;padding:8px 14px;font:inherit;cursor:pointer;color:var(--mut)}
+.seg button.active{background:var(--accent);color:#fff;font-weight:600}
+input[type=search]{flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit}
+main{padding:8px 24px 60px;max-width:1100px;margin:0 auto}
+section{margin-top:26px}
+h2{font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--mut);border-bottom:1px solid var(--line);padding-bottom:8px}
+.count{background:var(--line);color:var(--ink);border-radius:20px;font-size:12px;padding:2px 9px;margin-left:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-top:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:0;padding:14px 10px 10px;text-align:center;transition:.15s;display:flex;flex-direction:column;align-items:center}
+.card:hover{transform:translateY(-3px);box-shadow:0 8px 20px #0f172a14;border-color:#cbd5e1}
+.card img{width:90px;height:90px}
+figcaption{margin-top:8px;font-size:12px;line-height:1.4}
+figcaption code{display:block;color:var(--mut);font-size:11px;margin-top:2px}
+.hide{display:none}
+footer{color:var(--mut);font-size:12px;text-align:center;padding:30px}
+</style></head>
+<body>
+<header>
+  <h1>C_Structures — Icon Library</h1>
+  <p class="sub">Traditional civil-engineering symbols and shaded realistic renders for every joint, beam section/type, and force. Choose a view mode.</p>
+  <div class="toolbar">
+    <div class="seg" id="mode">
+      <button data-mode="symbols" class="active">Symbols (2D schematic)</button>
+      <button data-mode="realistic/2d">Realistic 2D</button>
+      <button data-mode="realistic/3d">Realistic 3D</button>
+    </div>
+    <input id="q" type="search" placeholder="Filter by name…">
+  </div>
+</header>
+<main><section><h2>Joints &amp; Supports <span class="count">8</span></h2><div class="grid"><figure class="card" data-name="fixed" data-cat="joints">
+      <img alt="Fixed support (encastré)" data-cat="joints" data-name="fixed" src="symbols/joints/fixed.svg">
+      <figcaption><strong>Fixed support (encastré)</strong><code>fixed</code></figcaption></figure>
+<figure class="card" data-name="free" data-cat="joints">
+      <img alt="Free node (internal joint)" data-cat="joints" data-name="free" src="symbols/joints/free.svg">
+      <figcaption><strong>Free node (internal joint)</strong><code>free</code></figcaption></figure>
+<figure class="card" data-name="internal_hinge" data-cat="joints">
+      <img alt="Internal hinge" data-cat="joints" data-name="internal_hinge" src="symbols/joints/internal_hinge.svg">
+      <figcaption><strong>Internal hinge</strong><code>internal_hinge</code></figcaption></figure>
+<figure class="card" data-name="pin_xy" data-cat="joints">
+      <img alt="Pinned support (pin / hinge)" data-cat="joints" data-name="pin_xy" src="symbols/joints/pin_xy.svg">
+      <figcaption><strong>Pinned support (pin / hinge)</strong><code>pin_xy</code></figcaption></figure>
+<figure class="card" data-name="rigid" data-cat="joints">
+      <img alt="Rigid (moment) connection" data-cat="joints" data-name="rigid" src="symbols/joints/rigid.svg">
+      <figcaption><strong>Rigid (moment) connection</strong><code>rigid</code></figcaption></figure>
+<figure class="card" data-name="roller_x" data-cat="joints">
+      <img alt="Roller support (X-constrained)" data-cat="joints" data-name="roller_x" src="symbols/joints/roller_x.svg">
+      <figcaption><strong>Roller support (X-constrained)</strong><code>roller_x</code></figcaption></figure>
+<figure class="card" data-name="roller_y" data-cat="joints">
+      <img alt="Roller support (Y-constrained)" data-cat="joints" data-name="roller_y" src="symbols/joints/roller_y.svg">
+      <figcaption><strong>Roller support (Y-constrained)</strong><code>roller_y</code></figcaption></figure>
+<figure class="card" data-name="roller_z" data-cat="joints">
+      <img alt="Roller support (Z-constrained)" data-cat="joints" data-name="roller_z" src="symbols/joints/roller_z.svg">
+      <figcaption><strong>Roller support (Z-constrained)</strong><code>roller_z</code></figcaption></figure></div></section>
+<section><h2>Beam Sections &amp; Types <span class="count">15</span></h2><div class="grid"><figure class="card" data-name="angle_l" data-cat="beams">
+      <img alt="Angle (L)" data-cat="beams" data-name="angle_l" src="symbols/beams/angle_l.svg">
+      <figcaption><strong>Angle (L)</strong><code>angle_l</code></figcaption></figure>
+<figure class="card" data-name="box_rhs" data-cat="beams">
+      <img alt="Box / RHS (hollow rect)" data-cat="beams" data-name="box_rhs" src="symbols/beams/box_rhs.svg">
+      <figcaption><strong>Box / RHS (hollow rect)</strong><code>box_rhs</code></figcaption></figure>
+<figure class="card" data-name="cantilever" data-cat="beams">
+      <img alt="Cantilever beam" data-cat="beams" data-name="cantilever" src="symbols/beams/cantilever.svg">
+      <figcaption><strong>Cantilever beam</strong><code>cantilever</code></figcaption></figure>
+<figure class="card" data-name="channel_c" data-cat="beams">
+      <img alt="Channel (C / PFC)" data-cat="beams" data-name="channel_c" src="symbols/beams/channel_c.svg">
+      <figcaption><strong>Channel (C / PFC)</strong><code>channel_c</code></figcaption></figure>
+<figure class="card" data-name="continuous" data-cat="beams">
+      <img alt="Continuous beam" data-cat="beams" data-name="continuous" src="symbols/beams/continuous.svg">
+      <figcaption><strong>Continuous beam</strong><code>continuous</code></figcaption></figure>
+<figure class="card" data-name="fixed_both" data-cat="beams">
+      <img alt="Fixed-fixed beam" data-cat="beams" data-name="fixed_both" src="symbols/beams/fixed_both.svg">
+      <figcaption><strong>Fixed-fixed beam</strong><code>fixed_both</code></figcaption></figure>
+<figure class="card" data-name="h_column" data-cat="beams">
+      <img alt="H-section (universal column)" data-cat="beams" data-name="h_column" src="symbols/beams/h_column.svg">
+      <figcaption><strong>H-section (universal column)</strong><code>h_column</code></figcaption></figure>
+<figure class="card" data-name="i_beam" data-cat="beams">
+      <img alt="I-section (universal beam)" data-cat="beams" data-name="i_beam" src="symbols/beams/i_beam.svg">
+      <figcaption><strong>I-section (universal beam)</strong><code>i_beam</code></figcaption></figure>
+<figure class="card" data-name="overhanging" data-cat="beams">
+      <img alt="Overhanging beam" data-cat="beams" data-name="overhanging" src="symbols/beams/overhanging.svg">
+      <figcaption><strong>Overhanging beam</strong><code>overhanging</code></figcaption></figure>
+<figure class="card" data-name="pipe_chs" data-cat="beams">
+      <img alt="Pipe / CHS (hollow round)" data-cat="beams" data-name="pipe_chs" src="symbols/beams/pipe_chs.svg">
+      <figcaption><strong>Pipe / CHS (hollow round)</strong><code>pipe_chs</code></figcaption></figure>
+<figure class="card" data-name="simply_supported" data-cat="beams">
+      <img alt="Simply supported beam" data-cat="beams" data-name="simply_supported" src="symbols/beams/simply_supported.svg">
+      <figcaption><strong>Simply supported beam</strong><code>simply_supported</code></figcaption></figure>
+<figure class="card" data-name="solid_rect" data-cat="beams">
+      <img alt="Solid rectangular bar" data-cat="beams" data-name="solid_rect" src="symbols/beams/solid_rect.svg">
+      <figcaption><strong>Solid rectangular bar</strong><code>solid_rect</code></figcaption></figure>
+<figure class="card" data-name="solid_round" data-cat="beams">
+      <img alt="Solid round bar" data-cat="beams" data-name="solid_round" src="symbols/beams/solid_round.svg">
+      <figcaption><strong>Solid round bar</strong><code>solid_round</code></figcaption></figure>
+<figure class="card" data-name="t_section" data-cat="beams">
+      <img alt="Tee (T)" data-cat="beams" data-name="t_section" src="symbols/beams/t_section.svg">
+      <figcaption><strong>Tee (T)</strong><code>t_section</code></figcaption></figure>
+<figure class="card" data-name="truss" data-cat="beams">
+      <img alt="Truss member" data-cat="beams" data-name="truss" src="symbols/beams/truss.svg">
+      <figcaption><strong>Truss member</strong><code>truss</code></figcaption></figure></div></section>
+<section><h2>Forces &amp; Force Types <span class="count">9</span></h2><div class="grid"><figure class="card" data-name="compression" data-cat="forces">
+      <img alt="Axial compression" data-cat="forces" data-name="compression" src="symbols/forces/compression.svg">
+      <figcaption><strong>Axial compression</strong><code>compression</code></figcaption></figure>
+<figure class="card" data-name="moment" data-cat="forces">
+      <img alt="Moment (couple)" data-cat="forces" data-name="moment" src="symbols/forces/moment.svg">
+      <figcaption><strong>Moment (couple)</strong><code>moment</code></figcaption></figure>
+<figure class="card" data-name="point_load" data-cat="forces">
+      <img alt="Point load (concentrated force)" data-cat="forces" data-name="point_load" src="symbols/forces/point_load.svg">
+      <figcaption><strong>Point load (concentrated force)</strong><code>point_load</code></figcaption></figure>
+<figure class="card" data-name="reaction" data-cat="forces">
+      <img alt="Support reaction" data-cat="forces" data-name="reaction" src="symbols/forces/reaction.svg">
+      <figcaption><strong>Support reaction</strong><code>reaction</code></figcaption></figure>
+<figure class="card" data-name="self_weight" data-cat="forces">
+      <img alt="Self-weight / gravity load" data-cat="forces" data-name="self_weight" src="symbols/forces/self_weight.svg">
+      <figcaption><strong>Self-weight / gravity load</strong><code>self_weight</code></figcaption></figure>
+<figure class="card" data-name="shear" data-cat="forces">
+      <img alt="Shear force" data-cat="forces" data-name="shear" src="symbols/forces/shear.svg">
+      <figcaption><strong>Shear force</strong><code>shear</code></figcaption></figure>
+<figure class="card" data-name="tension" data-cat="forces">
+      <img alt="Axial tension" data-cat="forces" data-name="tension" src="symbols/forces/tension.svg">
+      <figcaption><strong>Axial tension</strong><code>tension</code></figcaption></figure>
+<figure class="card" data-name="triangular_load" data-cat="forces">
+      <img alt="Triangular / varying distributed load" data-cat="forces" data-name="triangular_load" src="symbols/forces/triangular_load.svg">
+      <figcaption><strong>Triangular / varying distributed load</strong><code>triangular_load</code></figcaption></figure>
+<figure class="card" data-name="udl" data-cat="forces">
+      <img alt="Uniformly distributed load (UDL)" data-cat="forces" data-name="udl" src="symbols/forces/udl.svg">
+      <figcaption><strong>Uniformly distributed load (UDL)</strong><code>udl</code></figcaption></figure></div></section>
+</main>
+<footer>C_Structures · 32 components × 3 variants · © 2026 Colile Sibanda</footer>
+<script>
+const imgs=[...document.querySelectorAll('img')];
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');const m=b.dataset.mode;
+  imgs.forEach(im=>im.src=`${m}/${im.dataset.cat}/${im.dataset.name}.svg`);
+});
+document.getElementById('q').oninput=e=>{const t=e.target.value.toLowerCase();
+  document.querySelectorAll('.card').forEach(c=>{
+    const hit=c.dataset.name.includes(t)||c.querySelector('strong').textContent.toLowerCase().includes(t);
+    c.classList.toggle('hide',!hit);});};
+</script>
+</body></html>
