@@ -5,6 +5,18 @@ Format: [YYYY-MM-DD HH:MM]
 
 ---
 
+[2026-05-30 10:10]
+**Phase 2.1 — 6-DOF 3D frame element and solver**
+Why: The truss solver only carries axial force, so the README's bending/shear/moment promise had no engine behind it. Phase 2.1 adds the rigid-jointed frame element that makes bending and torsion real, while leaving the pin-jointed truss solver intact for teaching.
+Impact:
+- New pure module `physics/FrameElement.{hpp,cpp}`: builds the standard 12×12 Euler-Bernoulli local stiffness (axial + torsion + bending about both local axes from E, A, G, J, Iy, Iz), the member rotation matrix (global-Y reference, global-Z fallback for vertical members), and the global element stiffness T·k·Tᵀ. No I/O — unit-testable.
+- New `physics/FrameSimulator.{hpp,cpp}`: 6 DOF/node (3 translations + 3 rotations). Assembles the 6n system, applies boundary conditions (FIXED restrains all 6; translational supports as before; rotations otherwise free), auto-pins zero-stiffness DOFs, and solves by static condensation + SparseLU. Exposes nodal translations, rotations, reaction forces/moments, and a force-equilibrium self-check. Section defaults: ν = 0.3, Iy = Iz = I, J = Iy + Iz (documented, refined later).
+- `tests/FrameTests.cpp`: cantilever tip deflection −PL³/3EI and slope −PL²/2EI, two-element assembly reproducing the exact tip deflection, and axial PL/AE behaviour — all values independently confirmed in NumPy (the 12×12 formulation and assembly were validated end-to-end before writing the C++).
+- `CMakeLists.txt`: frame sources added to the app and test targets; new `FrameTests` ctest entry.
+- Not yet wired into the UI — a truss/frame mode toggle and the internal-force diagrams (Phase 2.2) are the next steps.
+
+---
+
 [2026-05-30 09:40]
 **Phase 1.2–1.4 — determinacy check, result visualisation, 3D loads**
 Why: With reactions in place, the remaining Phase 1 items make the truss trustworthy and readable: warn before solving an unstable model, let users read member forces at a glance, and load the structure in full 3D.
@@ -13,6 +25,12 @@ Impact:
 - 1.3 Visualisation: `ForceRenderer::getBeamColor` is now a true diverging ramp — compression (red) → white (neutral) → tension (blue). Added a numeric stress legend (±MAX_STRESS in kN) and a "Show member forces" toggle to the DISPLAY panel; `main.cpp` draws per-member force values (N) at deformed beam midpoints via the ImGui foreground draw list. The displacement-scale slider already carries an "×" label.
 - 1.4 3D loads: the selected-node panel now exposes Fx/Fy/Fz `DragFloat` entries (replacing the read-only force text), so loads can be applied in any direction, not just −Y.
 - `CMakeLists.txt`: added `Determinacy.cpp`, `ModelCheckPanel.cpp` (app), `Determinacy.cpp` + `DeterminacyTests.cpp` (tests), and a `DeterminacyTests` ctest entry. Phase 1 of the improvement plan is complete.
+
+---
+
+[2026-05-31 02:30]
+**Build environment fully working from VS Code PowerShell terminal — 5/5 suites passing**
+cmake/ctest now accessible in every VS Code terminal via `.vscode/settings.json` (`terminal.integrated.env.windows` prepends `C:\tools\msys64\mingw64\bin`). Full build + test run confirmed: ModelTests, PhysicsTests, CSVTests, IntegrationTests, DeterminacyTests — 100%, 0 failures. Phase 1.1 (reactions) and 1.2–1.4 (determinacy, visualisation, 3D loads) changes built and linked cleanly.
 
 ---
 
