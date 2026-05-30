@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Colile Sibanda. All rights reserved.
 // Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #include "data/CSVHandler.hpp"
-#include <algorithm> // Include for std::find_if and std::distance
 #include <fstream>
 #include <sstream>
 
@@ -30,8 +29,11 @@ void CSVHandler::loadStructure(const std::string& path,
             int startIdx, endIdx;
             float E, A;
             ss >> startIdx >> endIdx >> E >> A;
-            
-            beams.emplace_back(&nodes[startIdx], &nodes[endIdx], E, A);
+
+            const int n = static_cast<int>(nodes.size());
+            if (startIdx < 0 || endIdx < 0 || startIdx >= n || endIdx >= n)
+                continue; // skip beam referencing a non-existent node
+            beams.emplace_back(startIdx, endIdx, E, A);
         }
     }
 }
@@ -50,19 +52,10 @@ void CSVHandler::saveStructure(const std::string& path,
              << (node.isFixed() ? 1 : 0) << "\n";
     }
     
-    // Save beams
+    // Save beams. Connectivity is stored directly as node indices, so the
+    // mapping is exact and survives position edits (no float-equality scan).
     for (const Beam& beam : beams) {
-            int startIdx = std::distance(nodes.begin(), std::find_if(nodes.begin(), nodes.end(),
-            [&](const Node& n) { return n.getPosition().x == beam.getStart()->getPosition().x &&
-                                      n.getPosition().y == beam.getStart()->getPosition().y &&
-                                      n.getPosition().z == beam.getStart()->getPosition().z; }));
-            int endIdx = std::distance(nodes.begin(), std::find_if(nodes.begin(), nodes.end(),
-            [&](const Node& n) { return n.getPosition().x == beam.getEnd()->getPosition().x &&
-                                      n.getPosition().y == beam.getEnd()->getPosition().y &&
-                                      n.getPosition().z == beam.getEnd()->getPosition().z; }));
-
-        
-        file << "BEAM " << startIdx << " " << endIdx << " "
+        file << "BEAM " << beam.getStartIdx() << " " << beam.getEndIdx() << " "
              << beam.getYoungsModulus() << " "
              << beam.getCrossSection() << "\n";
     }

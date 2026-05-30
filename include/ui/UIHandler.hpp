@@ -59,10 +59,12 @@ public:
 
 private:
     // ── Tool / interaction state ──────────────────────────────────────────────
+    // Selection is held by index into the node/beam vectors (not pointers) so
+    // it can never dangle when those vectors grow or are rebuilt. -1 = none.
     ToolMode  currentTool   = ToolMode::NODE_PLACEMENT;
-    Node*     selectedNode  = nullptr;
-    Beam*     selectedBeam  = nullptr;
-    Node*     beamStart     = nullptr;
+    int       selectedNode  = -1;
+    int       selectedBeam  = -1;
+    int       beamStart     = -1;
     bool      draggingNode  = false;
     bool      needsSolveFlag = false;
 
@@ -80,11 +82,13 @@ private:
     std::deque<SceneSnapshot> m_redoStack;
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-    Node*     findNodeUnderCursor(const glm::vec3& w, std::vector<Node>& nodes);
-    Beam*     findBeamUnderCursor(int mx, int my,
-                                  std::vector<Beam>& beams,
+    // Both return an index into the respective vector, or -1 if nothing is hit.
+    int       findNodeUnderCursor(const glm::vec3& w, const std::vector<Node>& nodes) const;
+    int       findBeamUnderCursor(int mx, int my,
+                                  const std::vector<Node>& nodes,
+                                  const std::vector<Beam>& beams,
                                   const glm::mat4& view,
-                                  const glm::mat4& proj);
+                                  const glm::mat4& proj) const;
     glm::vec3 screenToWorld(int mx, int my,
                             const glm::mat4& view,
                             const glm::mat4& proj) const;

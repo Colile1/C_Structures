@@ -30,16 +30,18 @@ void Simulator::assembleGlobalStiffnessMatrix() {
     std::vector<Eigen::Triplet<double>> triplets;
     triplets.reserve(m_beams->size() * 36);
 
+    const int nNodes = static_cast<int>(m_nodes->size());
     for (const Beam& beam : *m_beams) {
-        const int i = static_cast<int>(beam.getStart() - &(*m_nodes)[0]);
-        const int j = static_cast<int>(beam.getEnd()   - &(*m_nodes)[0]);
+        const int i = beam.getStartIdx();
+        const int j = beam.getEndIdx();
+        if (i < 0 || j < 0 || i >= nNodes || j >= nNodes) continue;
 
-        glm::vec3 axis = beam.getEnd()->getPosition() - beam.getStart()->getPosition();
+        glm::vec3 axis = (*m_nodes)[j].getPosition() - (*m_nodes)[i].getPosition();
         float L = glm::length(axis);
         if (L < 1e-8f) continue;
 
         double lx = axis.x / L, ly = axis.y / L, lz = axis.z / L;
-        double AE_L = static_cast<double>(beam.getStiffness());
+        double AE_L = static_cast<double>(beam.getStiffness(*m_nodes));
 
         double k[3][3] = {
             {lx*lx, lx*ly, lx*lz},
@@ -150,15 +152,17 @@ std::vector<glm::vec3> Simulator::getNodeDisplacements() const {
 }
 
 float Simulator::getBeamForce(const Beam& beam) const {
-    const int i = static_cast<int>(beam.getStart() - &(*m_nodes)[0]);
-    const int j = static_cast<int>(beam.getEnd()   - &(*m_nodes)[0]);
+    const int i = beam.getStartIdx();
+    const int j = beam.getEndIdx();
+    const int nNodes = static_cast<int>(m_nodes->size());
+    if (i < 0 || j < 0 || i >= nNodes || j >= nNodes) return 0.0f;
 
     glm::vec3 dI(m_displacements[3*i], m_displacements[3*i+1], m_displacements[3*i+2]);
     glm::vec3 dJ(m_displacements[3*j], m_displacements[3*j+1], m_displacements[3*j+2]);
 
-    glm::vec3 axis   = beam.getEnd()->getPosition() - beam.getStart()->getPosition();
+    glm::vec3 axis   = (*m_nodes)[j].getPosition() - (*m_nodes)[i].getPosition();
     float     length = glm::length(axis);
     if (length < 1e-6f) return 0.0f;
 
-    return beam.getStiffness() * glm::dot(dJ - dI, axis / length);
+    return beam.getStiffness(*m_nodes) * glm::dot(dJ - dI, axis / length);
 }

@@ -11,6 +11,25 @@
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// eraseNodeAt
+// Purpose: remove a node and keep beam connectivity valid.
+// Inputs:  idx — node index to remove; nodes/beams — the model vectors.
+// Output:  none (mutates nodes and beams in place). Beams touching the node
+//          are dropped; indices above idx are shifted down to match the
+//          compacted node vector.
+static void eraseNodeAt(int idx, std::vector<Node>& nodes, std::vector<Beam>& beams) {
+    if (idx < 0 || idx >= static_cast<int>(nodes.size())) return;
+    beams.erase(std::remove_if(beams.begin(), beams.end(),
+        [idx](const Beam& b){
+            return b.getStartIdx() == idx || b.getEndIdx() == idx;
+        }), beams.end());
+    nodes.erase(nodes.begin() + idx);
+    for (Beam& b : beams) {
+        if (b.getStartIdx() > idx) b.setStartIdx(b.getStartIdx() - 1);
+        if (b.getEndIdx()   > idx) b.setEndIdx(b.getEndIdx()   - 1);
+    }
+}
+
 void UIHandler::initialize(int w, int h) {
     screenWidth  = w;
     screenHeight = h;
@@ -41,29 +60,33 @@ glm::vec3 UIHandler::worldToScreen(const glm::vec3& w,
     return {sx, sy, 0.0f};
 }
 
-Node* UIHandler::findNodeUnderCursor(const glm::vec3& worldPos, std::vector<Node>& nodes) {
-    Node* best = nullptr;
+// Returns the index of the nearest node within a world-space pick radius, or -1.
+int UIHandler::findNodeUnderCursor(const glm::vec3& worldPos,
+                                    const std::vector<Node>& nodes) const {
+    int   best     = -1;
     float bestDist = 0.35f;
-    for (auto& n : nodes) {
-        float d = glm::distance(n.getPosition(), worldPos);
-        if (d < bestDist) { bestDist = d; best = &n; }
+    for (int i = 0; i < static_cast<int>(nodes.size()); ++i) {
+        float d = glm::distance(nodes[i].getPosition(), worldPos);
+        if (d < bestDist) { bestDist = d; best = i; }
     }
     return best;
 }
 
-// 2-D screen-space proximity test for beam picking.
-Beam* UIHandler::findBeamUnderCursor(int mx, int my,
-                                      std::vector<Beam>& beams,
-                                      const glm::mat4& view,
-                                      const glm::mat4& proj) {
+// 2-D screen-space proximity test for beam picking. Returns a beam index or -1.
+int UIHandler::findBeamUnderCursor(int mx, int my,
+                                    const std::vector<Node>& nodes,
+                                    const std::vector<Beam>& beams,
+                                    const glm::mat4& view,
+                                    const glm::mat4& proj) const {
     const float THRESH = 8.0f; // pixels
-    Beam* best = nullptr;
+    int   best  = -1;
     float bestD = THRESH;
     glm::vec2 mp(static_cast<float>(mx), static_cast<float>(my));
 
-    for (auto& b : beams) {
-        glm::vec3 sa = worldToScreen(b.getStart()->getPosition(), view, proj);
-        glm::vec3 ea = worldToScreen(b.getEnd()->getPosition(),   view, proj);
+    for (int i = 0; i < static_cast<int>(beams.size()); ++i) {
+        const Beam& b = beams[i];
+        glm::vec3 sa = worldToScreen(nodes[b.getStartIdx()].getPosition(), view, proj);
+        glm::vec3 ea = worldToScreen(nodes[b.getEndIdx()].getPosition(),   view, proj);
         glm::vec2 s(sa.x, sa.y), e(ea.x, ea.y);
 
         glm::vec2 se  = e - s;
@@ -71,7 +94,7 @@ Beam* UIHandler::findBeamUnderCursor(int mx, int my,
         if (len2 < 1.0f) continue;
         float t = glm::clamp(glm::dot(mp - s, se) / len2, 0.0f, 1.0f);
         float d = glm::length(mp - (s + t * se));
-        if (d < bestD) { bestD = d; best = &b; }
+        if (d < bestD) { bestD = d; best = i; }
     }
     return best;
 }
@@ -89,9 +112,7 @@ void UIHandler::pushSnapshot(const std::vector<Node>& nodes,
     }
     snap.beams.reserve(beams.size());
     for (const auto& b : beams) {
-        int si = static_cast<int>(b.getStart() - &nodes[0]);
-        int ei = static_cast<int>(b.getEnd()   - &nodes[0]);
-        snap.beams.push_back({si, ei,
+        snap.beams.push_back({b.getStartIdx(), b.getEndIdx(),
                               b.getYoungsModulus(), b.getCrossSection(),
                               b.getMomentOfInertia(), b.getMaterial()});
     }
@@ -104,10 +125,11 @@ void UIHandler::pushSnapshot(const std::vector<Node>& nodes,
 void UIHandler::applySnapshot(const SceneSnapshot& s,
                                std::vector<Node>& nodes,
                                std::vector<Beam>& beams) {
-    // Rebuild nodes then beams (beams need valid node pointers).
-    selectedNode = nullptr;
-    selectedBeam = nullptr;
-    beamStart    = nullptr;
+    // Rebuild nodes then beams. Beams reference nodes by index, so a rebuilt
+    // node vector stays consistent without any pointer fix-up.
+    selectedNode = -1;
+    selectedBeam = -1;
+    beamStart    = -1;
 
     nodes.clear();
     nodes.reserve(s.nodes.size() + 32);
@@ -119,8 +141,7 @@ void UIHandler::applySnapshot(const SceneSnapshot& s,
 
     beams.clear();
     for (const auto& bs : s.beams) {
-        beams.emplace_back(&nodes[bs.iStart], &nodes[bs.iEnd],
-                           bs.E, bs.A);
+        beams.emplace_back(bs.iStart, bs.iEnd, bs.E, bs.A);
         beams.back().setMomentOfInertia(bs.I);
         beams.back().setMaterial(bs.material);
         // setMaterial overwrites E for non-CUSTOM; restore explicit E.
@@ -142,9 +163,7 @@ void UIHandler::undo(std::vector<Node>& nodes, std::vector<Beam>& beams) {
         current.nodes.push_back({p.x, p.y, p.z, n.getJointType(), f.x, f.y, f.z});
     }
     for (const auto& b : beams) {
-        int si = static_cast<int>(b.getStart() - &nodes[0]);
-        int ei = static_cast<int>(b.getEnd()   - &nodes[0]);
-        current.beams.push_back({si, ei,
+        current.beams.push_back({b.getStartIdx(), b.getEndIdx(),
                                  b.getYoungsModulus(), b.getCrossSection(),
                                  b.getMomentOfInertia(), b.getMaterial()});
     }
@@ -167,9 +186,7 @@ void UIHandler::redo(std::vector<Node>& nodes, std::vector<Beam>& beams) {
         current.nodes.push_back({p.x, p.y, p.z, n.getJointType(), f.x, f.y, f.z});
     }
     for (const auto& b : beams) {
-        int si = static_cast<int>(b.getStart() - &nodes[0]);
-        int ei = static_cast<int>(b.getEnd()   - &nodes[0]);
-        current.beams.push_back({si, ei,
+        current.beams.push_back({b.getStartIdx(), b.getEndIdx(),
                                  b.getYoungsModulus(), b.getCrossSection(),
                                  b.getMomentOfInertia(), b.getMaterial()});
     }
@@ -197,10 +214,11 @@ void UIHandler::handleEvent(SDL_Event& e,
 
     if (e.type == SDL_MOUSEMOTION) {
         currentMouseWorldPos = screenToWorld(e.motion.x, e.motion.y, view, proj);
-        if (draggingNode && selectedNode) {
-            selectedNode->setPosition(
-                {currentMouseWorldPos.x, selectedNode->getPosition().y,
-                 currentMouseWorldPos.z});
+        if (draggingNode && selectedNode >= 0 &&
+            selectedNode < static_cast<int>(nodes.size())) {
+            Node& sn = nodes[selectedNode];
+            sn.setPosition(
+                {currentMouseWorldPos.x, sn.getPosition().y, currentMouseWorldPos.z});
             needsSolveFlag = true;
         }
     }
@@ -210,16 +228,15 @@ void UIHandler::handleEvent(SDL_Event& e,
 
         switch (currentTool) {
             case ToolMode::SELECT: {
-                Node* hitNode = findNodeUnderCursor(wp, nodes);
-                if (hitNode) {
+                int hitNode = findNodeUnderCursor(wp, nodes);
+                if (hitNode >= 0) {
                     selectedNode = hitNode;
-                    selectedBeam = nullptr;
+                    selectedBeam = -1;
                     draggingNode = true;
                 } else {
-                    Beam* hitBeam = findBeamUnderCursor(e.button.x, e.button.y,
-                                                        beams, view, proj);
-                    selectedBeam = hitBeam;
-                    selectedNode = nullptr;
+                    selectedBeam = findBeamUnderCursor(e.button.x, e.button.y,
+                                                       nodes, beams, view, proj);
+                    selectedNode = -1;
                 }
                 break;
             }
@@ -229,27 +246,30 @@ void UIHandler::handleEvent(SDL_Event& e,
                 needsSolveFlag = true;
                 break;
 
-            case ToolMode::BEAM_CREATION:
-                if (Node* hit = findNodeUnderCursor(wp, nodes)) {
-                    if (!beamStart) {
+            case ToolMode::BEAM_CREATION: {
+                int hit = findNodeUnderCursor(wp, nodes);
+                if (hit >= 0) {
+                    if (beamStart < 0) {
                         beamStart = hit;
                     } else if (hit != beamStart) {
                         pushSnapshot(nodes, beams);
                         beams.emplace_back(beamStart, hit,
                                            BeamMaterial::STEEL, 1e-4f);
-                        beamStart      = nullptr;
+                        beamStart      = -1;
                         needsSolveFlag = true;
                     }
                 }
                 break;
-
-            case ToolMode::FORCE_APPLICATION:
-                if (Node* hit = findNodeUnderCursor(wp, nodes)) {
+            }
+            case ToolMode::FORCE_APPLICATION: {
+                int hit = findNodeUnderCursor(wp, nodes);
+                if (hit >= 0) {
                     pushSnapshot(nodes, beams);
-                    hit->applyForce(forceVector);
+                    nodes[hit].applyForce(forceVector);
                     needsSolveFlag = true;
                 }
                 break;
+            }
         }
     }
 
@@ -259,7 +279,7 @@ void UIHandler::handleEvent(SDL_Event& e,
     }
 
     if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT) {
-        beamStart    = nullptr;
+        beamStart    = -1;
         draggingNode = false;
     }
 
@@ -283,43 +303,35 @@ void UIHandler::handleEvent(SDL_Event& e,
                 if (ctrl) {
                     pushSnapshot(nodes, beams);
                     nodes.clear(); beams.clear();
-                    selectedNode = nullptr; selectedBeam = nullptr;
-                    beamStart    = nullptr;
+                    selectedNode = -1; selectedBeam = -1;
+                    beamStart    = -1;
                     needsSolveFlag = true;
                 } else {
                     currentTool = ToolMode::NODE_PLACEMENT;
                 }
                 break;
-            case SDLK_b: currentTool = ToolMode::BEAM_CREATION; beamStart = nullptr; break;
+            case SDLK_b: currentTool = ToolMode::BEAM_CREATION; beamStart = -1; break;
             case SDLK_f: if (!ctrl) currentTool = ToolMode::FORCE_APPLICATION; break;
 
             // ── Delete selected ──────────────────────────────────────────────
             case SDLK_DELETE:
-                if (selectedNode) {
+                if (selectedNode >= 0 && selectedNode < static_cast<int>(nodes.size())) {
                     pushSnapshot(nodes, beams);
-                    Node* target = selectedNode;
-                    beams.erase(
-                        std::remove_if(beams.begin(), beams.end(),
-                            [target](const Beam& b){
-                                return b.getStart() == target || b.getEnd() == target;
-                            }), beams.end());
-                    nodes.erase(std::find_if(nodes.begin(), nodes.end(),
-                            [target](const Node& nd){ return &nd == target; }));
-                    selectedNode   = nullptr;
+                    eraseNodeAt(selectedNode, nodes, beams);
+                    selectedNode   = -1;
                     needsSolveFlag = true;
-                } else if (selectedBeam) {
+                } else if (selectedBeam >= 0 &&
+                           selectedBeam < static_cast<int>(beams.size())) {
                     pushSnapshot(nodes, beams);
-                    Beam* target = selectedBeam;
-                    beams.erase(std::find_if(beams.begin(), beams.end(),
-                            [target](const Beam& b){ return &b == target; }));
-                    selectedBeam   = nullptr;
+                    beams.erase(beams.begin() + selectedBeam);
+                    selectedBeam   = -1;
                     needsSolveFlag = true;
                 }
                 break;
 
             case SDLK_ESCAPE:
-                beamStart = nullptr; selectedNode = nullptr;
-                selectedBeam = nullptr; draggingNode = false;
+                beamStart = -1; selectedNode = -1;
+                selectedBeam = -1; draggingNode = false;
                 break;
 
             default: break;
@@ -355,8 +367,8 @@ void UIHandler::renderUI(SDL_Window* window,
             if (ImGui::MenuItem("New Structure", "Ctrl+N")) {
                 pushSnapshot(nodes, beams);
                 nodes.clear(); beams.clear();
-                selectedNode = nullptr; selectedBeam = nullptr;
-                beamStart    = nullptr;
+                selectedNode = -1; selectedBeam = -1;
+                beamStart    = -1;
                 needsSolveFlag = true;
             }
             ImGui::Separator();
@@ -376,7 +388,7 @@ void UIHandler::renderUI(SDL_Window* window,
             if (ImGui::MenuItem("Node",    "N",   currentTool == ToolMode::NODE_PLACEMENT))
                 currentTool = ToolMode::NODE_PLACEMENT;
             if (ImGui::MenuItem("Beam",    "B",   currentTool == ToolMode::BEAM_CREATION))
-                { currentTool = ToolMode::BEAM_CREATION; beamStart = nullptr; }
+                { currentTool = ToolMode::BEAM_CREATION; beamStart = -1; }
             if (ImGui::MenuItem("Force",   "F",   currentTool == ToolMode::FORCE_APPLICATION))
                 currentTool = ToolMode::FORCE_APPLICATION;
             ImGui::EndMenu();
@@ -480,13 +492,18 @@ void UIHandler::renderUI(SDL_Window* window,
     ImGui::SliderFloat("Disp.Scale", &dispScale, 1.0f, 5000.0f, "%.0fx",
                        ImGuiSliderFlags_Logarithmic);
 
+    // Selection indices can go stale after a rebuild; treat out-of-range as none.
+    const bool hasNode = selectedNode >= 0 && selectedNode < static_cast<int>(nodes.size());
+    const bool hasBeam = selectedBeam >= 0 && selectedBeam < static_cast<int>(beams.size());
+
     // ── Selected Node ──────────────────────────────────────────────────────────
-    if (selectedNode) {
+    if (hasNode) {
+        Node& node = nodes[selectedNode];
         ImGui::Spacing();
         ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "SELECTED NODE");
         ImGui::Separator();
 
-        glm::vec3 pos = selectedNode->getPosition();
+        glm::vec3 pos = node.getPosition();
         float px = pos.x, py = pos.y, pz = pos.z;
         bool posChg = false;
         posChg |= ImGui::DragFloat("X (m)##p", &px, 0.05f, -100.f, 100.f, "%.3f");
@@ -494,7 +511,7 @@ void UIHandler::renderUI(SDL_Window* window,
         posChg |= ImGui::DragFloat("Z (m)##p", &pz, 0.05f, -100.f, 100.f, "%.3f");
         if (posChg) {
             pushSnapshot(nodes, beams);
-            selectedNode->setPosition({px, py, pz});
+            node.setPosition({px, py, pz});
             needsSolveFlag = true;
         }
 
@@ -502,44 +519,39 @@ void UIHandler::renderUI(SDL_Window* window,
         static const char* jointNames[] = {
             "Free", "Fixed", "Pin XY", "Roller X", "Roller Y", "Roller Z"
         };
-        int jt = static_cast<int>(selectedNode->getJointType());
+        int jt = static_cast<int>(node.getJointType());
         if (ImGui::Combo("Joint Type", &jt, jointNames, 6)) {
             pushSnapshot(nodes, beams);
-            selectedNode->setJointType(static_cast<JointType>(jt));
+            node.setJointType(static_cast<JointType>(jt));
             needsSolveFlag = true;
         }
 
-        glm::vec3 f = selectedNode->getAppliedForce();
+        glm::vec3 f = node.getAppliedForce();
         ImGui::Text("Force: (%.0f, %.0f, %.0f) N", f.x, f.y, f.z);
         if (ImGui::Button("Clear Force", ImVec2(-1, 0))) {
             pushSnapshot(nodes, beams);
-            selectedNode->clearForce();
+            node.clearForce();
             needsSolveFlag = true;
         }
         ImGui::Spacing();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f,0.18f,0.18f,1.0f));
         if (ImGui::Button("Delete Node", ImVec2(-1, 0))) {
             pushSnapshot(nodes, beams);
-            Node* target = selectedNode;
-            beams.erase(std::remove_if(beams.begin(), beams.end(),
-                [target](const Beam& b){
-                    return b.getStart() == target || b.getEnd() == target;
-                }), beams.end());
-            nodes.erase(std::find_if(nodes.begin(), nodes.end(),
-                [target](const Node& n){ return &n == target; }));
-            selectedNode   = nullptr;
+            eraseNodeAt(selectedNode, nodes, beams);
+            selectedNode   = -1;
             needsSolveFlag = true;
         }
         ImGui::PopStyleColor();
 
     // ── Selected Beam ──────────────────────────────────────────────────────────
-    } else if (selectedBeam) {
+    } else if (hasBeam) {
+        Beam& beam = beams[selectedBeam];
         ImGui::Spacing();
         ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "SELECTED BEAM");
         ImGui::Separator();
 
         // Length (read-only)
-        ImGui::Text("Length: %.4f m", selectedBeam->getLength());
+        ImGui::Text("Length: %.4f m", beam.getLength(nodes));
         ImGui::Spacing();
 
         // Material preset
@@ -547,51 +559,49 @@ void UIHandler::renderUI(SDL_Window* window,
             "Steel (200 GPa)", "Aluminum (70 GPa)",
             "Concrete (30 GPa)", "Timber (12 GPa)", "Custom"
         };
-        int matIdx = static_cast<int>(selectedBeam->getMaterial());
+        int matIdx = static_cast<int>(beam.getMaterial());
         if (ImGui::Combo("Material", &matIdx, matNames, 5)) {
             pushSnapshot(nodes, beams);
-            selectedBeam->setMaterial(static_cast<BeamMaterial>(matIdx));
+            beam.setMaterial(static_cast<BeamMaterial>(matIdx));
             needsSolveFlag = true;
         }
         ImGui::Spacing();
 
         // Young's modulus
-        float E = selectedBeam->getYoungsModulus();
+        float E = beam.getYoungsModulus();
         float Egpa = E * 1e-9f;
         if (ImGui::DragFloat("E (GPa)", &Egpa, 0.5f, 0.1f, 1000.0f, "%.1f")) {
             pushSnapshot(nodes, beams);
-            selectedBeam->setYoungsModulus(Egpa * 1e9f);
+            beam.setYoungsModulus(Egpa * 1e9f);
             needsSolveFlag = true;
         }
 
         // Cross-section area
-        float A = selectedBeam->getCrossSection();
+        float A = beam.getCrossSection();
         float Acm2 = A * 1e4f; // m² → cm²
         if (ImGui::DragFloat("A (cm^2)", &Acm2, 0.1f, 0.001f, 1000.0f, "%.4f")) {
             pushSnapshot(nodes, beams);
-            selectedBeam->setCrossSection(Acm2 * 1e-4f);
+            beam.setCrossSection(Acm2 * 1e-4f);
             needsSolveFlag = true;
         }
 
         // Second moment of area
-        float I = selectedBeam->getMomentOfInertia();
+        float I = beam.getMomentOfInertia();
         float Icm4 = I * 1e8f; // m⁴ → cm⁴
         if (ImGui::DragFloat("I (cm^4)", &Icm4, 0.001f, 1e-6f, 1e6f, "%.6f")) {
             pushSnapshot(nodes, beams);
-            selectedBeam->setMomentOfInertia(Icm4 * 1e-8f);
+            beam.setMomentOfInertia(Icm4 * 1e-8f);
         }
         ImGui::Spacing();
 
         // Derived stiffness
-        ImGui::Text("AE/L: %.3e N/m", static_cast<double>(selectedBeam->getStiffness()));
+        ImGui::Text("AE/L: %.3e N/m", static_cast<double>(beam.getStiffness(nodes)));
         ImGui::Spacing();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f,0.18f,0.18f,1.0f));
         if (ImGui::Button("Delete Beam", ImVec2(-1, 0))) {
             pushSnapshot(nodes, beams);
-            Beam* target = selectedBeam;
-            beams.erase(std::find_if(beams.begin(), beams.end(),
-                [target](const Beam& b){ return &b == target; }));
-            selectedBeam   = nullptr;
+            beams.erase(beams.begin() + selectedBeam);
+            selectedBeam   = -1;
             needsSolveFlag = true;
         }
         ImGui::PopStyleColor();

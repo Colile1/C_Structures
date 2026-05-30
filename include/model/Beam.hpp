@@ -3,6 +3,7 @@
 #pragma once
 #include "Node.hpp"
 #include <string>
+#include <vector>
 
 // Standard structural material presets.
 enum class BeamMaterial {
@@ -34,21 +35,30 @@ inline float defaultE(BeamMaterial m) {
     }
 }
 
+// A Beam connects two nodes referenced by their indices into the model's
+// node vector. Indices (not pointers) are stored so that growing or
+// reallocating the node vector can never dangle a beam's endpoints, and so
+// connectivity survives a CSV round-trip without float-equality matching.
 class Beam {
 public:
     // Construct with explicit material (sets default E for that material).
-    Beam(Node* start, Node* end,
+    Beam(int startIdx, int endIdx,
          BeamMaterial mat = BeamMaterial::STEEL,
          float A = 1e-4f,
          float I = 8.33e-9f);
 
     // Legacy constructor used by existing code / tests (E, A given directly).
-    Beam(Node* start, Node* end, float youngsModulus, float crossSection);
+    Beam(int startIdx, int endIdx, float youngsModulus, float crossSection);
 
-    Node* getStart() const;
-    Node* getEnd()   const;
-    float getLength()    const;
-    float getStiffness() const; // AE/L
+    int   getStartIdx() const { return startNode; }
+    int   getEndIdx()   const { return endNode;   }
+    void  setStartIdx(int i)  { startNode = i; }
+    void  setEndIdx(int i)    { endNode   = i; }
+
+    // Length and axial stiffness need node positions; the owning node vector
+    // is passed in rather than held, keeping Beam free of dangling references.
+    float getLength(const std::vector<Node>& nodes)    const;
+    float getStiffness(const std::vector<Node>& nodes) const; // AE/L
 
     float getYoungsModulus() const { return youngsModulus; }
     float getCrossSection()  const { return crossSection; }
@@ -67,8 +77,8 @@ public:
     }
 
 private:
-    Node* startNode;
-    Node* endNode;
+    int   startNode;        // index into the node vector
+    int   endNode;          // index into the node vector
     float youngsModulus;    // Pa
     float crossSection;     // m²
     float momentOfInertia;  // m⁴  (for future frame-element solver)
