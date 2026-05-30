@@ -5,6 +5,24 @@ Format: [YYYY-MM-DD HH:MM]
 
 ---
 
+[2026-05-30 09:40]
+**Phase 1.2–1.4 — determinacy check, result visualisation, 3D loads**
+Why: With reactions in place, the remaining Phase 1 items make the truss trustworthy and readable: warn before solving an unstable model, let users read member forces at a glance, and load the structure in full 3D.
+Impact:
+- 1.2 Determinacy: new pure module `physics/Determinacy.{hpp,cpp}` — `analyzeDeterminacy()` classifies a model UNSTABLE / DETERMINATE / INDETERMINATE via the count criterion m + r vs 3n, plus an obvious-mechanism check (a free joint held by < 2 members). New `ui/ModelCheckPanel.{hpp,cpp}` shows the counts and a colour-coded plain-language verdict. `tests/DeterminacyTests.cpp` covers single bar (unstable), symmetric two-bar (deficient in 3D), supported tetrahedron (determinate), and +1 redundant member (indeterminate); classifications confirmed with a standalone harness.
+- 1.3 Visualisation: `ForceRenderer::getBeamColor` is now a true diverging ramp — compression (red) → white (neutral) → tension (blue). Added a numeric stress legend (±MAX_STRESS in kN) and a "Show member forces" toggle to the DISPLAY panel; `main.cpp` draws per-member force values (N) at deformed beam midpoints via the ImGui foreground draw list. The displacement-scale slider already carries an "×" label.
+- 1.4 3D loads: the selected-node panel now exposes Fx/Fy/Fz `DragFloat` entries (replacing the read-only force text), so loads can be applied in any direction, not just −Y.
+- `CMakeLists.txt`: added `Determinacy.cpp`, `ModelCheckPanel.cpp` (app), `Determinacy.cpp` + `DeterminacyTests.cpp` (tests), and a `DeterminacyTests` ctest entry. Phase 1 of the improvement plan is complete.
+
+---
+
+[2026-05-31 02:00]
+**Fixed: font-not-found error and cmake/ctest not on PowerShell PATH**
+Font: `fa-solid-900.ttf` copied to `build_win/` so the `"fa-solid-900.ttf"` fallback path in main.cpp resolves regardless of working directory when launching from VS Code or Explorer. Added `build_win/fa-solid-900.ttf` and `build_win/*.dll` to `.gitignore`.
+PATH: Added `C:\tools\msys64\mingw64\bin` to the Windows user PATH permanently so `cmake`, `ctest`, and `ninja` are available in every PowerShell terminal without needing the MSYS2 shell. Updated `starter_guide.md` build/test commands to use the direct `cmake --build` / `ctest --test-dir` form that works from the VS Code PowerShell terminal. All 4 test suites still passing (100%, 0 failures).
+
+---
+
 [2026-05-30 09:15]
 **Phase 1.1 — Support reactions (Simulator + UI + tests)**
 Why: The solver computed displacements and member forces but never reported support reactions, so users had no way to confirm the model balanced. Reactions are the highest-credibility, fully verifiable truss output.

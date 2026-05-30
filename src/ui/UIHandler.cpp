@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Colile Sibanda. All rights reserved.
 // Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #include "ui/UIHandler.hpp"
+#include "visualization/ForceRenderer.hpp"
 #include <imgui.h>
 #include "IconsFontAwesome6.h"
 #include <glm/gtc/matrix_transform.hpp>
@@ -491,6 +492,19 @@ void UIHandler::renderUI(SDL_Window* window,
     ImGui::Separator();
     ImGui::SliderFloat("Disp.Scale", &dispScale, 1.0f, 5000.0f, "%.0fx",
                        ImGuiSliderFlags_Logarithmic);
+    ImGui::Checkbox("Show member forces", &showForceLabels);
+
+    // Stress legend: diverging ramp with numeric end-stops (±MAX_STRESS).
+    const float maxKN = ForceRenderer::MAX_STRESS * 1e-3f;
+    ImGui::ColorButton("##cmp", ImVec4(1,0,0,1),
+                       ImGuiColorEditFlags_NoTooltip, ImVec2(16,16));
+    ImGui::SameLine(); ImGui::Text("Compression  -%.0f kN", maxKN);
+    ImGui::ColorButton("##neu", ImVec4(1,1,1,1),
+                       ImGuiColorEditFlags_NoTooltip, ImVec2(16,16));
+    ImGui::SameLine(); ImGui::Text("Neutral       0 kN");
+    ImGui::ColorButton("##ten", ImVec4(0,0,1,1),
+                       ImGuiColorEditFlags_NoTooltip, ImVec2(16,16));
+    ImGui::SameLine(); ImGui::Text("Tension     +%.0f kN", maxKN);
 
     // Selection indices can go stale after a rebuild; treat out-of-range as none.
     const bool hasNode = selectedNode >= 0 && selectedNode < static_cast<int>(nodes.size());
@@ -526,8 +540,20 @@ void UIHandler::renderUI(SDL_Window* window,
             needsSolveFlag = true;
         }
 
+        ImGui::Spacing();
+        ImGui::TextDisabled("Applied load (N)");
         glm::vec3 f = node.getAppliedForce();
-        ImGui::Text("Force: (%.0f, %.0f, %.0f) N", f.x, f.y, f.z);
+        float fx = f.x, fy = f.y, fz = f.z;
+        bool fChg = false;
+        fChg |= ImGui::DragFloat("Fx (N)", &fx, 10.0f, -1e6f, 1e6f, "%.0f");
+        fChg |= ImGui::DragFloat("Fy (N)", &fy, 10.0f, -1e6f, 1e6f, "%.0f");
+        fChg |= ImGui::DragFloat("Fz (N)", &fz, 10.0f, -1e6f, 1e6f, "%.0f");
+        if (fChg) {
+            pushSnapshot(nodes, beams);
+            node.clearForce();
+            node.applyForce({fx, fy, fz});
+            needsSolveFlag = true;
+        }
         if (ImGui::Button("Clear Force", ImVec2(-1, 0))) {
             pushSnapshot(nodes, beams);
             node.clearForce();

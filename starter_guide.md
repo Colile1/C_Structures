@@ -127,16 +127,27 @@ A window opens with a test structure pre-loaded (two beams with a downward force
 
 ## Running the Tests
 
-```bash
-# Windows (MSYS2 shell)
-cd build_win && ctest --output-on-failure -V
+**Windows (VS Code PowerShell terminal):**
 
-# Linux/macOS
-cd build && ctest --output-on-failure -V
+```powershell
+cmake --build build_win --target tests
+ctest --test-dir build_win --output-on-failure
+```
+
+**Linux/macOS:**
+
+```bash
+cmake --build build && ctest --test-dir build --output-on-failure
 ```
 
 Expected output: **100% tests passed, 0 tests failed out of 4** (22 individual tests across
 ModelTests, PhysicsTests, CSVTests, IntegrationTests).
+
+> **cmake/ctest not found?** Add MSYS2 to your PATH once in PowerShell:
+> ```powershell
+> [Environment]::SetEnvironmentVariable("PATH","C:\tools\msys64\mingw64\bin;$env:PATH","User")
+> ```
+> Then restart VS Code so the new PATH takes effect.
 
 ---
 

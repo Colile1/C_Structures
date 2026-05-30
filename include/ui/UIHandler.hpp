@@ -46,6 +46,7 @@ public:
 
     ToolMode  getCurrentTool()  const { return currentTool; }
     glm::vec3 getForceVector()  const { return forceVector; }
+    bool      getShowForceLabels() const { return showForceLabels; }
     bool consumeNeedsSolve() { bool v = needsSolveFlag; needsSolveFlag = false; return v; }
 
     glm::vec3 currentMouseWorldPos = {};
@@ -67,6 +68,7 @@ private:
     int       beamStart     = -1;
     bool      draggingNode  = false;
     bool      needsSolveFlag = false;
+    bool      showForceLabels = true; // draw per-member force values in 3D view
 
     glm::vec3 forceVector = {0.0f, -1000.0f, 0.0f};
     float forceMagX =  0.0f;

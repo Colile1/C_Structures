@@ -43,11 +43,15 @@ void ForceRenderer::initialize() {
     generateConeMesh();
 }
 
+// Multi-stop diverging ramp: compression (red) → white (no force) → tension (blue).
+// White at the centre keeps the zero level readable and gives a smooth gradient
+// in both directions, matching the numeric legend shown in the UI.
 glm::vec3 ForceRenderer::getBeamColor(float force, float maxStress) {
+    const glm::vec3 white(1.0f, 1.0f, 1.0f);
+    if (maxStress <= 0.0f) return white;
     float n = std::clamp(force / maxStress, -1.0f, 1.0f);
-    if (std::abs(n) < 0.05f)  return NEUTRAL_COLOR;
-    if (n > 0)                 return NEUTRAL_COLOR + (TENSION_COLOR     - NEUTRAL_COLOR) *  n;
-    return                            NEUTRAL_COLOR + (COMPRESSION_COLOR - NEUTRAL_COLOR) * -n;
+    if (n >= 0.0f) return white + (TENSION_COLOR     - white) *  n; // 0→white, +1→blue
+    return                white + (COMPRESSION_COLOR - white) * -n; // -1→red
 }
 
 void ForceRenderer::renderForceVectors(const std::vector<Node>& nodes,

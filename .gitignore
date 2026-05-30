@@ -31,6 +31,10 @@ Makefile
 C_Structures
 tests
 
+# Bundled runtime assets copied into build dirs (originals live in resources/)
+build_win/fa-solid-900.ttf
+build_win/*.dll
+
 # ── Runtime temporaries ───────────────────────────────────────────
 imgui.ini
 *.tmp
@@ -38,7 +42,8 @@ test_*_tmp.csv
 integration_*_tmp.csv
 
 # ── IDE and editor ────────────────────────────────────────────────
-.vscode/
+.vscode/launch.json
+.vscode/c_cpp_properties.json
 .idea/
 .vs/
 *.swp

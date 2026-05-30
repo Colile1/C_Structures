@@ -11,12 +11,14 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <cstdio>
 #include "IconsFontAwesome6.h"
 
 #include "../include/model/Node.hpp"
 #include "../include/model/Beam.hpp"
 #include "../include/physics/Simulator.hpp"
 #include "../include/ui/ReactionsPanel.hpp"
+#include "../include/ui/ModelCheckPanel.hpp"
 #include "../include/data/CSVHandler.hpp"
 #include "../include/visualization/ForceRenderer.hpp"
 #include "../include/ui/UIHandler.hpp"
@@ -384,6 +386,28 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
         ui.renderUI(window, nodes, beams, dispScale);
         renderReactionsPanel(nodes, physics);
+        renderModelCheckPanel(nodes, beams);
+
+        // Per-member force labels at deformed beam midpoints (toggleable).
+        if (ui.getShowForceLabels()) {
+            ImDrawList* dl = ImGui::GetForegroundDrawList();
+            for (const auto& beam : beams) {
+                int si = beam.getStartIdx(), ei = beam.getEndIdx();
+                if (si < 0 || si >= (int)displacements.size()) continue;
+                if (ei < 0 || ei >= (int)displacements.size()) continue;
+                glm::vec3 a   = nodes[si].getPosition() + displacements[si] * dispScale;
+                glm::vec3 b   = nodes[ei].getPosition() + displacements[ei] * dispScale;
+                glm::vec4 clip = proj * view * glm::vec4((a + b) * 0.5f, 1.0f);
+                if (clip.w <= 0.0f) continue;
+                glm::vec3 ndc = glm::vec3(clip) / clip.w;
+                if (ndc.x < -1.f || ndc.x > 1.f || ndc.y < -1.f || ndc.y > 1.f) continue;
+                float sx = (ndc.x * 0.5f + 0.5f) * w;
+                float sy = (1.0f - (ndc.y * 0.5f + 0.5f)) * h;
+                char buf[32];
+                std::snprintf(buf, sizeof buf, "%.0f N", physics.getBeamForce(beam));
+                dl->AddText(ImVec2(sx, sy), IM_COL32(255, 240, 90, 255), buf);
+            }
+        }
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
