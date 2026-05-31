@@ -5,6 +5,35 @@ Format: [YYYY-MM-DD HH:MM]
 
 ---
 
+[2026-05-31 06:00]
+**Phase 3 + Phase 4 — all improvement-plan phases complete; 8/8 test suites, 100% passing**
+
+Phase 3.1 — Beginner/Engineer mode:
+- `UIHandler`: added `beginnerMode` bool (default true), toggled via a colour-coded button at the top of the toolbar (green=Beginner, blue=Engineer) and a View menu item. A `[Beginner]` / `[Engineer]` badge appears on the right of the menu bar.
+- In Beginner mode: joint types show friendly names ("Fixed wall", "Pin support", "Slide up-down", etc.) with explanatory tooltips; beam material shows short names only; E/A/I sliders are hidden; stiffness shows as "Stiffness" not "AE/L".
+
+Phase 3.3 — Plain-language Results panel:
+- New `ui/ResultsPanel.{hpp,cpp}`: collapsible floating "Results" window. Beginner mode describes each member as "being STRETCHED — X kN of pull (tension)" / "being SQUASHED — Y kN of push (compression)" and each node as "moved X mm right, Y mm up, Z mm out". Engineer mode shows compact tables (member force table + node displacement table).
+
+Phase 3.4 — Guided templates:
+- New `ui/Templates.{hpp,cpp}`: four pre-built structures — Simple Beam (pin+roller, midpoint load), Triangle Truss (2 fixed bases, apex load), Portal Frame (2 fixed columns, horizontal beam, sway load), Cantilever (3 elements, tip load). Loaded via File → Load Template submenu; each clears the scene, pushes an undo snapshot, and triggers a solve.
+
+Phase 3.5 — Glass-box K-matrix panel:
+- New `ui/GlassBoxPanel.{hpp,cpp}`: Engineer-mode panel opened via View → Stiffness Matrix. Reconstructs and displays the global K matrix for models with ≤6 nodes (scrollable table, diagonal yellow, constrained-DOF rows red). For larger models shows a displacement summary instead. Displacement vector table shown below.
+
+Phase 4.1 — Save/Load UI:
+- File → Open... / Save... trigger ImGui modal popups with a text-input for the file path. Keyboard shortcuts Ctrl+O and Ctrl+S wired. On load, the structure is rebuilt and re-solved automatically.
+
+Phase 4.2 — Screenshot export:
+- File → Export Screenshot (also F12): captures the full framebuffer with `glReadPixels`, flips vertically, swaps R/B for BMP, and saves via `SDL_SaveBMP` with a timestamp filename. No extra dependency needed.
+
+Phase 4.3 — GitHub Actions CI:
+- `.github/workflows/ci.yml`: runs on push/PR to main/master/dev. Installs all apt deps (SDL2, Eigen3, glm, GLEW, GTest, Mesa), configures with CMake/Ninja, builds, and runs `ctest --output-on-failure`.
+
+All phases clean-built and 8/8 test suites pass.
+
+---
+
 [2026-05-31 04:00]
 **Phase 2.2 complete + Phase 2.3 + Phase 2.4 — 8/8 test suites, 100% passing**
 

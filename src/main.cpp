@@ -23,11 +23,15 @@
 #include "../include/ui/ReactionsPanel.hpp"
 #include "../include/ui/ModelCheckPanel.hpp"
 #include "../include/ui/LoadsPanel.hpp"
+#include "../include/ui/ResultsPanel.hpp"
+#include "../include/ui/GlassBoxPanel.hpp"
+#include "../include/ui/Templates.hpp"
 #include "../include/data/CSVHandler.hpp"
 #include "../include/visualization/ForceRenderer.hpp"
 #include "../include/ui/UIHandler.hpp"
 #include "../include/graphics/Shader.hpp"
 #include "../include/graphics/Camera.hpp"
+#include <ctime>
 
 static const int WIN_W = 1280;
 static const int WIN_H = 800;
@@ -272,6 +276,36 @@ static void drawForceDiagrams(
     glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(verts.size() / 3));
     glLineWidth(1.0f);
     glBindVertexArray(0);
+}
+
+// saveScreenshot
+// Reads the current OpenGL framebuffer and saves it as a BMP file.
+// Filename is auto-generated with a timestamp.
+static void saveScreenshot(SDL_Window* window) {
+    int w = 0, h = 0;
+    SDL_GetWindowSize(window, &w, &h);
+    std::vector<unsigned char> pixels(w * h * 3);
+    glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+    // Flip vertically (OpenGL origin is bottom-left, BMP is top-left).
+    for (int row = 0; row < h / 2; ++row) {
+        unsigned char* a = pixels.data() + row * w * 3;
+        unsigned char* b = pixels.data() + (h - 1 - row) * w * 3;
+        for (int c = 0; c < w * 3; ++c) std::swap(a[c], b[c]);
+    }
+    // Swap R/B channels (OpenGL is RGB, BMP/SDL wants BGR).
+    for (int i = 0; i < w * h * 3; i += 3) std::swap(pixels[i], pixels[i+2]);
+
+    SDL_Surface* surf = SDL_CreateRGBSurfaceFrom(
+        pixels.data(), w, h, 24, w * 3,
+        0x000000ff, 0x0000ff00, 0x00ff0000, 0);
+    if (surf) {
+        std::time_t t = std::time(nullptr);
+        char fname[64];
+        std::strftime(fname, sizeof fname, "screenshot_%Y%m%d_%H%M%S.bmp", std::localtime(&t));
+        SDL_SaveBMP(surf, fname);
+        SDL_FreeSurface(surf);
+        std::cout << "Screenshot saved: " << fname << "\n";
+    }
 }
 
 // Triangle truss: two fixed base nodes, free apex under vertical load.
@@ -527,6 +561,35 @@ int main(int /*argc*/, char* /*argv*/[]) {
             }
         }
 
+        // ── New panels ─────────────────────────────────────────────────────────
+        renderResultsPanel(nodes, beams, physics, ui.getBeginnerMode(), dispScale);
+        {
+            bool gb = ui.getShowGlassBox();
+            if (gb) renderGlassBoxPanel(nodes, beams, physics, &gb);
+        }
+
+        // ── Pending requests from UIHandler ────────────────────────────────────
+        {
+            std::string path;
+            if (ui.consumeLoadRequest(path)) {
+                ui.pushSnapshot(nodes, beams);
+                CSVHandler::loadStructure(path, nodes, beams);
+                physics = Simulator(nodes, beams); physics.solveStaticForces();
+                if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); frameSim.solve(); }
+            }
+            if (ui.consumeSaveRequest(path)) {
+                CSVHandler::saveStructure(path, nodes, beams);
+            }
+            int tpl = ui.consumeTemplateRequest();
+            if (tpl >= 0) {
+                ui.pushSnapshot(nodes, beams);
+                loadTemplate(tpl, nodes, beams);
+                distLoads.clear();
+                physics = Simulator(nodes, beams); physics.solveStaticForces();
+                if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); frameSim.solve(); }
+            }
+        }
+
         // Per-member force labels at deformed beam midpoints (toggleable).
         if (ui.getShowForceLabels()) {
             ImDrawList* dl = ImGui::GetForegroundDrawList();
@@ -550,6 +613,9 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        // Screenshot is captured after ImGui renders (so UI is included).
+        if (ui.consumeScreenshot()) saveScreenshot(window);
 
         SDL_GL_SwapWindow(window);
     }

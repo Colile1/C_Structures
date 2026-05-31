@@ -312,7 +312,13 @@ void UIHandler::handleEvent(SDL_Event& e,
                 }
                 break;
             case SDLK_b: currentTool = ToolMode::BEAM_CREATION; beamStart = -1; break;
-            case SDLK_f: if (!ctrl) currentTool = ToolMode::FORCE_APPLICATION; break;
+            case SDLK_f:
+                if (ctrl) m_wantScreenshot = true;          // Ctrl+F → screenshot (F12 also works)
+                else      currentTool = ToolMode::FORCE_APPLICATION;
+                break;
+            case SDLK_F12: m_wantScreenshot = true; break;
+            case SDLK_o: if (ctrl) m_showOpenDlg = true; break;
+            case SDLK_s: if (ctrl) m_showSaveDlg = true; break;
 
             // ── Delete selected ──────────────────────────────────────────────
             case SDLK_DELETE:
@@ -373,6 +379,19 @@ void UIHandler::renderUI(SDL_Window* window,
                 needsSolveFlag = true;
             }
             ImGui::Separator();
+            if (ImGui::MenuItem("Open...", "Ctrl+O")) m_showOpenDlg = true;
+            if (ImGui::MenuItem("Save...", "Ctrl+S")) m_showSaveDlg = true;
+            ImGui::Separator();
+            if (ImGui::MenuItem("Export Screenshot", "F12")) m_wantScreenshot = true;
+            ImGui::Separator();
+            if (ImGui::BeginMenu("Load Template")) {
+                if (ImGui::MenuItem("Simple Beam"))   m_templateIdx = 0;
+                if (ImGui::MenuItem("Triangle Truss")) m_templateIdx = 1;
+                if (ImGui::MenuItem("Portal Frame"))  m_templateIdx = 2;
+                if (ImGui::MenuItem("Cantilever"))    m_templateIdx = 3;
+                ImGui::EndMenu();
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Alt+F4")) {
                 SDL_Event q; q.type = SDL_QUIT; SDL_PushEvent(&q);
             }
@@ -398,12 +417,24 @@ void UIHandler::renderUI(SDL_Window* window,
             if (ImGui::MenuItem("Run Solver", "Enter")) needsSolveFlag = true;
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu("View")) {
+            ImGui::MenuItem("Stiffness Matrix", nullptr, &showGlassBox);
+            ImGui::Separator();
+            if (ImGui::MenuItem(beginnerMode ? "Switch to Engineer Mode" : "Switch to Beginner Mode"))
+                beginnerMode = !beginnerMode;
+            ImGui::EndMenu();
+        }
 
+        // Right-aligned: mode indicator + Beginner/Engineer badge
         float rightEdge = ImGui::GetContentRegionAvail().x;
         std::string modeStr = std::string("Mode: ") + toolLabel(currentTool);
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + rightEdge
-                             - ImGui::CalcTextSize(modeStr.c_str()).x - 8.0f);
+        const char* badge = beginnerMode ? "  [Beginner]" : "  [Engineer]";
+        ImVec4 badgeCol = beginnerMode ? ImVec4(0.3f,0.9f,0.4f,1.f) : ImVec4(0.4f,0.7f,1.f,1.f);
+        float totalW = ImGui::CalcTextSize((modeStr + badge).c_str()).x + 8.0f;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + rightEdge - totalW);
         ImGui::TextDisabled("%s", modeStr.c_str());
+        ImGui::SameLine(0, 0);
+        ImGui::TextColored(badgeCol, "%s", badge);
         ImGui::EndMainMenuBar();
     }
 
@@ -417,6 +448,20 @@ void UIHandler::renderUI(SDL_Window* window,
                  ImGuiWindowFlags_NoMove       | ImGuiWindowFlags_NoScrollbar |
                  ImGuiWindowFlags_NoBringToFrontOnFocus);
 
+    // Beginner / Engineer mode toggle at top of toolbar
+    {
+        ImVec4 bc = beginnerMode ? ImVec4(0.15f,0.6f,0.25f,1.f) : ImVec4(0.15f,0.4f,0.75f,1.f);
+        ImGui::PushStyleColor(ImGuiCol_Button, bc);
+        if (ImGui::Button(beginnerMode ? ICON_FA_GRADUATION_CAP "  Beginner" :
+                                         ICON_FA_GEAR "  Engineer", ImVec2(122,26)))
+            beginnerMode = !beginnerMode;
+        ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(beginnerMode
+                ? "Beginner mode: friendly labels, plain-English results.\nClick to switch to Engineer mode."
+                : "Engineer mode: full E/I/stiffness values, K-matrix.\nClick to switch to Beginner mode.");
+    }
+    ImGui::Spacing();
     ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "TOOLS");
     ImGui::Separator();
     ImGui::Spacing();
@@ -549,18 +594,31 @@ void UIHandler::renderUI(SDL_Window* window,
         }
 
         ImGui::Spacing();
-        static const char* jointNames[] = {
-            "Free", "Fixed", "Pin XY", "Roller X", "Roller Y", "Roller Z"
+        // Joint type: beginner-friendly names vs engineering names
+        static const char* jointNamesBeg[] = {
+            "No support (free)", "Fixed wall (all locked)",
+            "Pin support (pivot)", "Slide left-right",
+            "Slide up-down", "Slide in-out"
+        };
+        static const char* jointNamesEng[] = {
+            "FREE", "FIXED (all DOF)", "PIN_XY (Ux=Uy=0)",
+            "ROLLER_X (Ux=0)", "ROLLER_Y (Uy=0)", "ROLLER_Z (Uz=0)"
         };
         int jt = static_cast<int>(node.getJointType());
-        if (ImGui::Combo("Joint Type", &jt, jointNames, 6)) {
+        if (ImGui::Combo("Support", &jt,
+                         beginnerMode ? jointNamesBeg : jointNamesEng, 6)) {
             pushSnapshot(nodes, beams);
             node.setJointType(static_cast<JointType>(jt));
             needsSolveFlag = true;
         }
+        if (ImGui::IsItemHovered() && beginnerMode)
+            ImGui::SetTooltip("Choose how this node is held in place.\n"
+                              "Fixed wall: completely locked.\n"
+                              "Pin: can rotate but cannot move.\n"
+                              "Roller: can slide in one direction.");
 
         ImGui::Spacing();
-        ImGui::TextDisabled("Applied load (N)");
+        ImGui::TextDisabled(beginnerMode ? "Applied force (N)" : "Applied load (N)");
         glm::vec3 f = node.getAppliedForce();
         float fx = f.x, fy = f.y, fz = f.z;
         bool fChg = false;
@@ -595,52 +653,60 @@ void UIHandler::renderUI(SDL_Window* window,
         ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "SELECTED BEAM");
         ImGui::Separator();
 
-        // Length (read-only)
-        ImGui::Text("Length: %.4f m", beam.getLength(nodes));
+        float beamL = beam.getLength(nodes);
+        ImGui::Text("Length: %.3f m  (%.1f cm)", beamL, beamL * 100.0f);
         ImGui::Spacing();
 
-        // Material preset
-        static const char* matNames[] = {
+        // Material preset — always visible
+        static const char* matNamesBeg[] = {
+            "Steel", "Aluminum", "Concrete", "Timber", "Custom"
+        };
+        static const char* matNamesEng[] = {
             "Steel (200 GPa)", "Aluminum (70 GPa)",
             "Concrete (30 GPa)", "Timber (12 GPa)", "Custom"
         };
         int matIdx = static_cast<int>(beam.getMaterial());
-        if (ImGui::Combo("Material", &matIdx, matNames, 5)) {
+        if (ImGui::Combo("Material", &matIdx,
+                         beginnerMode ? matNamesBeg : matNamesEng, 5)) {
             pushSnapshot(nodes, beams);
             beam.setMaterial(static_cast<BeamMaterial>(matIdx));
             needsSolveFlag = true;
         }
+        if (ImGui::IsItemHovered() && beginnerMode)
+            ImGui::SetTooltip("Steel: very stiff (bridges, buildings)\n"
+                              "Aluminum: lighter, somewhat flexible\n"
+                              "Concrete: heavy, medium stiffness\n"
+                              "Timber: flexible, natural material");
+
+        // Technical properties — Engineer mode only
+        if (!beginnerMode) {
+            ImGui::Spacing();
+            float E = beam.getYoungsModulus();
+            float Egpa = E * 1e-9f;
+            if (ImGui::DragFloat("E (GPa)", &Egpa, 0.5f, 0.1f, 1000.0f, "%.1f")) {
+                pushSnapshot(nodes, beams);
+                beam.setYoungsModulus(Egpa * 1e9f);
+                needsSolveFlag = true;
+            }
+            float Acm2 = beam.getCrossSection() * 1e4f;
+            if (ImGui::DragFloat("A (cm\xc2\xb2)", &Acm2, 0.1f, 0.001f, 1000.0f, "%.4f")) {
+                pushSnapshot(nodes, beams);
+                beam.setCrossSection(Acm2 * 1e-4f);
+                needsSolveFlag = true;
+            }
+            float Icm4 = beam.getMomentOfInertia() * 1e8f;
+            if (ImGui::DragFloat("I (cm\xe2\x81\xb4)", &Icm4, 0.001f, 1e-6f, 1e6f, "%.6f")) {
+                pushSnapshot(nodes, beams);
+                beam.setMomentOfInertia(Icm4 * 1e-8f);
+            }
+        }
         ImGui::Spacing();
 
-        // Young's modulus
-        float E = beam.getYoungsModulus();
-        float Egpa = E * 1e-9f;
-        if (ImGui::DragFloat("E (GPa)", &Egpa, 0.5f, 0.1f, 1000.0f, "%.1f")) {
-            pushSnapshot(nodes, beams);
-            beam.setYoungsModulus(Egpa * 1e9f);
-            needsSolveFlag = true;
-        }
-
-        // Cross-section area
-        float A = beam.getCrossSection();
-        float Acm2 = A * 1e4f; // m² → cm²
-        if (ImGui::DragFloat("A (cm^2)", &Acm2, 0.1f, 0.001f, 1000.0f, "%.4f")) {
-            pushSnapshot(nodes, beams);
-            beam.setCrossSection(Acm2 * 1e-4f);
-            needsSolveFlag = true;
-        }
-
-        // Second moment of area
-        float I = beam.getMomentOfInertia();
-        float Icm4 = I * 1e8f; // m⁴ → cm⁴
-        if (ImGui::DragFloat("I (cm^4)", &Icm4, 0.001f, 1e-6f, 1e6f, "%.6f")) {
-            pushSnapshot(nodes, beams);
-            beam.setMomentOfInertia(Icm4 * 1e-8f);
-        }
-        ImGui::Spacing();
-
-        // Derived stiffness
-        ImGui::Text("AE/L: %.3e N/m", static_cast<double>(beam.getStiffness(nodes)));
+        // Derived stiffness — always show but label differs
+        if (beginnerMode)
+            ImGui::TextDisabled("Stiffness: %.2e N/m", static_cast<double>(beam.getStiffness(nodes)));
+        else
+            ImGui::Text("AE/L: %.3e N/m", static_cast<double>(beam.getStiffness(nodes)));
         ImGui::Spacing();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f,0.18f,0.18f,1.0f));
         if (ImGui::Button("Delete Beam", ImVec2(-1, 0))) {
@@ -675,4 +741,30 @@ void UIHandler::renderUI(SDL_Window* window,
                 (int)m_undoStack.size(), (int)m_redoStack.size());
     ImGui::End();
     ImGui::PopStyleVar();
+
+    // ── File open/save popups (modal text-input dialogs) ───────────────────────
+    if (m_showOpenDlg) { ImGui::OpenPopup("Open File##dlg"); m_showOpenDlg = false; }
+    if (m_showSaveDlg) { ImGui::OpenPopup("Save File##dlg"); m_showSaveDlg = false; }
+
+    auto filePopup = [&](const char* title, bool isSave) {
+        ImGui::SetNextWindowSize(ImVec2(420, 0), ImGuiCond_Always);
+        if (ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("%s", isSave ? "Save structure to CSV file:" : "Open CSV structure file:");
+            ImGui::Spacing();
+            ImGui::InputText("Path", m_pathBuf, sizeof(m_pathBuf));
+            ImGui::Spacing();
+            if (ImGui::Button(isSave ? "Save" : "Open", ImVec2(80, 0))) {
+                std::string p(m_pathBuf);
+                if (!p.empty()) {
+                    if (isSave) m_pendingSave = p; else m_pendingLoad = p;
+                }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(80, 0))) ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+    };
+    filePopup("Open File##dlg", false);
+    filePopup("Save File##dlg", true);
 }

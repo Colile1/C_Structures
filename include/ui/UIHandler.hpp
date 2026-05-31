@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <deque>
+#include <string>
 #include "../model/Node.hpp"
 #include "../model/Beam.hpp"
 
@@ -50,6 +51,20 @@ public:
     bool      getUseFrameMode()    const { return useFrameMode; }
     bool      getShowDiagram()     const { return showDiagram; }
     int       getDiagramType()     const { return diagramType; }
+    bool      getBeginnerMode()    const { return beginnerMode; }
+    bool      getShowGlassBox()    const { return showGlassBox; }
+    // Pending file-operation paths (consumed by main.cpp each frame).
+    bool      consumeLoadRequest(std::string& path) {
+        if (!m_pendingLoad.empty()) { path = m_pendingLoad; m_pendingLoad.clear(); return true; }
+        return false;
+    }
+    bool      consumeSaveRequest(std::string& path) {
+        if (!m_pendingSave.empty()) { path = m_pendingSave; m_pendingSave.clear(); return true; }
+        return false;
+    }
+    bool      consumeScreenshot() { bool v = m_wantScreenshot; m_wantScreenshot = false; return v; }
+    // Template load: returns index 0-3 (simple beam / triangle / portal / cantilever), or -1.
+    int       consumeTemplateRequest() { int v = m_templateIdx; m_templateIdx = -1; return v; }
     bool consumeNeedsSolve() { bool v = needsSolveFlag; needsSolveFlag = false; return v; }
 
     glm::vec3 currentMouseWorldPos = {};
@@ -75,6 +90,17 @@ private:
     bool      useFrameMode    = false;  // true = FrameSimulator (6-DOF); false = truss
     bool      showDiagram     = true;   // overlay internal-force diagram in frame mode
     int       diagramType     = 5;      // 0=N  1=Vy  2=Vz  3=T  4=My  5=Mz
+    bool      beginnerMode    = true;   // hides E/I details, shows friendly names
+    bool      showGlassBox    = false;  // show stiffness matrix (Engineer mode)
+    // Pending one-shot requests consumed by main.cpp
+    std::string m_pendingLoad;
+    std::string m_pendingSave;
+    bool        m_wantScreenshot = false;
+    int         m_templateIdx   = -1;  // 0=SimpleBeam 1=Triangle 2=Portal 3=Cantilever
+    // File-dialog state
+    char        m_pathBuf[512]  = {};
+    bool        m_showOpenDlg   = false;
+    bool        m_showSaveDlg   = false;
 
     glm::vec3 forceVector = {0.0f, -1000.0f, 0.0f};
     float forceMagX =  0.0f;

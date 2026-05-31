@@ -55,6 +55,9 @@ add_executable(C_Structures
     src/ui/ReactionsPanel.cpp
     src/ui/ModelCheckPanel.cpp
     src/ui/LoadsPanel.cpp
+    src/ui/ResultsPanel.cpp
+    src/ui/GlassBoxPanel.cpp
+    src/ui/Templates.cpp
     src/visualization/ForceRenderer.cpp
     src/visualization/RendererUtils.cpp
     src/graphics/Camera.cpp
