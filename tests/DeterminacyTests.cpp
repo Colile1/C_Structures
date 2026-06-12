@@ -84,3 +84,79 @@ TEST(Determinacy, ExtraMemberIsIndeterminate) {
     EXPECT_EQ(d.degree, 1);
     EXPECT_EQ(d.stability, Stability::INDETERMINATE);
 }
+
+// ── Frame mode (6 DOF/node) ────────────────────────────────────────────────
+// In a rigid frame a member carries 6 internal forces and a FIXED joint also
+// restrains the 3 rotations; the criterion is 6m + r vs 6n.
+
+// Cantilever: one fixed base, one free tip, one member. r=6, 6m=6, 6n=12 →
+// degree 0. A cantilever is statically determinate (one rigid member holds the
+// tip, so no mechanism hint despite the tip having only one member).
+TEST(Determinacy, CantileverFrameIsDeterminate) {
+    std::vector<Node> nodes;
+    nodes.emplace_back(0.0f, 0.0f, 0.0f); nodes.back().setFixed(true); // r=6 in frame
+    nodes.emplace_back(3.0f, 0.0f, 0.0f);                              // free tip
+    std::vector<Beam> beams { Beam(0, 1, 2e11f, 0.01f) };
+
+    auto d = analyzeDeterminacy(nodes, beams, /*frame=*/true);
+    EXPECT_TRUE(d.frame);
+    EXPECT_EQ(d.dofPerNode, 6);
+    EXPECT_EQ(d.members, 1);
+    EXPECT_EQ(d.memberUnknowns, 6);
+    EXPECT_EQ(d.reactions, 6);
+    EXPECT_EQ(d.dof, 12);
+    EXPECT_EQ(d.degree, 0);
+    EXPECT_FALSE(d.hasMechanismHint);
+    EXPECT_EQ(d.stability, Stability::DETERMINATE);
+}
+
+// Propped cantilever: fixed base + a vertical-roller prop at the tip. r=6+1=7,
+// 6m=6, 6n=12 → degree 1. Statically indeterminate to degree 1 (textbook).
+TEST(Determinacy, ProppedCantileverFrameIsIndeterminate) {
+    std::vector<Node> nodes;
+    nodes.emplace_back(0.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::FIXED);    // r=6
+    nodes.emplace_back(3.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::ROLLER_Y); // r=1
+    std::vector<Beam> beams { Beam(0, 1, 2e11f, 0.01f) };
+
+    auto d = analyzeDeterminacy(nodes, beams, /*frame=*/true);
+    EXPECT_EQ(d.members, 1);
+    EXPECT_EQ(d.reactions, 7);
+    EXPECT_EQ(d.dof, 12);
+    EXPECT_EQ(d.degree, 1);
+    EXPECT_FALSE(d.hasMechanismHint);
+    EXPECT_EQ(d.stability, Stability::INDETERMINATE);
+}
+
+// An unsupported frame (no supports anywhere) floats as a rigid body: the
+// mechanism hint must fire and the verdict must be unstable.
+TEST(Determinacy, UnsupportedFrameIsMechanism) {
+    std::vector<Node> nodes;
+    nodes.emplace_back(0.0f, 0.0f, 0.0f); // both free — no supports
+    nodes.emplace_back(3.0f, 0.0f, 0.0f);
+    std::vector<Beam> beams { Beam(0, 1, 2e11f, 0.01f) };
+
+    auto d = analyzeDeterminacy(nodes, beams, /*frame=*/true);
+    EXPECT_EQ(d.reactions, 0);
+    EXPECT_TRUE(d.hasMechanismHint);
+    EXPECT_EQ(d.stability, Stability::UNSTABLE);
+}
+
+// The same truss criterion must be unchanged when frame mode is off: a
+// determinate space tetrahedron still classifies as determinate via 3n.
+TEST(Determinacy, TrussModeUnaffectedByFrameFlag) {
+    std::vector<Node> nodes;
+    nodes.emplace_back(0.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::FIXED);
+    nodes.emplace_back(1.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::PIN_XY);
+    nodes.emplace_back(0.0f, 1.0f, 0.0f); nodes.back().setJointType(JointType::ROLLER_Z);
+    nodes.emplace_back(0.0f, 0.0f, 1.0f);
+    std::vector<Beam> beams {
+        Beam(0,1,2e11f,1e-4f), Beam(0,2,2e11f,1e-4f), Beam(0,3,2e11f,1e-4f),
+        Beam(1,2,2e11f,1e-4f), Beam(1,3,2e11f,1e-4f), Beam(2,3,2e11f,1e-4f)
+    };
+    auto d = analyzeDeterminacy(nodes, beams, /*frame=*/false);
+    EXPECT_FALSE(d.frame);
+    EXPECT_EQ(d.dofPerNode, 3);
+    EXPECT_EQ(d.dof, 12);
+    EXPECT_EQ(d.degree, 0);
+    EXPECT_EQ(d.stability, Stability::DETERMINATE);
+}

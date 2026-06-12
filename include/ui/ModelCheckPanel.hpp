@@ -7,5 +7,7 @@
 
 // ui/ModelCheckPanel.hpp : Dear ImGui window showing the determinacy/stability
 // pre-check (counts + plain-language verdict). Display-only.
+// frame: true to classify with the 6-DOF frame model, matching the active solver.
 void renderModelCheckPanel(const std::vector<Node>& nodes,
-                           const std::vector<Beam>& beams);
+                           const std::vector<Beam>& beams,
+                           bool frame = false);

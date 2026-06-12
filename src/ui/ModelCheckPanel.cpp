@@ -8,16 +8,20 @@
 // renderModelCheckPanel
 // Purpose: draw a "Model Check" window with the determinacy counts and a
 //          colour-coded plain-language verdict before/while solving.
-// Inputs:  nodes, beams — the scene.
+// Inputs:  nodes, beams — the scene; frame — true when the 6-DOF solver is active.
 // Output:  none (draws into the current ImGui frame).
 void renderModelCheckPanel(const std::vector<Node>& nodes,
-                           const std::vector<Beam>& beams) {
-    const DeterminacyResult d = analyzeDeterminacy(nodes, beams);
+                           const std::vector<Beam>& beams,
+                           bool frame) {
+    const DeterminacyResult d = analyzeDeterminacy(nodes, beams, frame);
 
     ImGui::Begin("Model Check");
     ImGui::Text("Members m = %d   Reactions r = %d   Nodes n = %d",
                 d.members, d.reactions, d.nodes);
-    ImGui::Text("m + r = %d   vs   3n = %d", d.members + d.reactions, d.dof);
+    if (d.frame)
+        ImGui::Text("6m + r = %d   vs   6n = %d", d.memberUnknowns + d.reactions, d.dof);
+    else
+        ImGui::Text("m + r = %d   vs   3n = %d", d.memberUnknowns + d.reactions, d.dof);
     ImGui::Separator();
 
     ImVec4 colour;

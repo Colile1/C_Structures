@@ -554,7 +554,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
         ui.renderUI(window, nodes, beams, dispScale);
         renderReactionsPanel(nodes, physics);
-        renderModelCheckPanel(nodes, beams);
+        renderModelCheckPanel(nodes, beams, frameOn);
         if (frameOn) {
             if (renderLoadsPanel(distLoads, frameSim, beams)) {
                 frameSim = FrameSimulator(nodes, beams);
