@@ -6,13 +6,15 @@
 #include <imgui.h>
 
 // renderModelCheckPanel
-// Purpose: draw a "Model Check" window with the determinacy counts and a
-//          colour-coded plain-language verdict before/while solving.
-// Inputs:  nodes, beams — the scene; frame — true when the 6-DOF solver is active.
+// Purpose: draw a "Model Check" window with the determinacy counts, a
+//          colour-coded verdict, and the last solver status (if any).
+// Inputs:  nodes, beams — the scene; frame — true when the 6-DOF solver is
+//          active; result — pointer to last SolveResult, or nullptr.
 // Output:  none (draws into the current ImGui frame).
 void renderModelCheckPanel(const std::vector<Node>& nodes,
                            const std::vector<Beam>& beams,
-                           bool frame) {
+                           bool frame,
+                           const SolveResult* result) {
     const DeterminacyResult d = analyzeDeterminacy(nodes, beams, frame);
 
     ImGui::Begin("Model Check");
@@ -33,5 +35,17 @@ void renderModelCheckPanel(const std::vector<Node>& nodes,
     ImGui::PushTextWrapPos(0.0f);
     ImGui::TextColored(colour, "%s", d.message.c_str());
     ImGui::PopTextWrapPos();
+
+    // Solver status — shown only when an error occurred.
+    if (result && result->status != SolveStatus::OK) {
+        ImGui::Separator();
+        ImVec4 errColour = (result->status == SolveStatus::MECHANISM)
+            ? ImVec4(0.95f, 0.50f, 0.10f, 1.0f)   // orange — mechanism
+            : ImVec4(0.95f, 0.25f, 0.25f, 1.0f);   // red    — numerical failure
+        ImGui::PushTextWrapPos(0.0f);
+        ImGui::TextColored(errColour, "Solver: %s", result->message.c_str());
+        ImGui::PopTextWrapPos();
+    }
+
     ImGui::End();
 }

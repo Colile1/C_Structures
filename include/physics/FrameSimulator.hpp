@@ -8,6 +8,7 @@
 #include "../model/Node.hpp"
 #include "../model/Beam.hpp"
 #include "DistributedLoad.hpp"
+#include "SolveResult.hpp"
 
 // physics/FrameSimulator.hpp : 3D frame solver with 6 DOF per node
 // (3 translations + 3 rotations). Builds 12x12 frame elements, assembles the
@@ -19,7 +20,7 @@ class FrameSimulator {
 public:
     FrameSimulator(std::vector<Node>& nodes, std::vector<Beam>& beams);
 
-    void solve();
+    SolveResult solve();
 
     // Per-node translation (m) and rotation (rad) after the last solve.
     std::vector<glm::vec3> getNodeTranslations() const;

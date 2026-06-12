@@ -4,7 +4,6 @@
 #include "physics/FrameSimulator.hpp"
 #include "physics/FrameElement.hpp"
 #include <Eigen/SparseLU>
-#include <iostream>
 #include <cmath>
 
 FrameSimulator::FrameSimulator(std::vector<Node>& nodes, std::vector<Beam>& beams)
@@ -85,10 +84,10 @@ void FrameSimulator::assemble() {
     m_K.setFromTriplets(triplets.begin(), triplets.end());
 }
 
-void FrameSimulator::solve() {
+SolveResult FrameSimulator::solve() {
     m_reactions.setZero();
-    if (m_nodes->empty()) return;
-    if (m_beams->empty()) { m_u.setZero(); return; }
+    if (m_nodes->empty()) return {};
+    if (m_beams->empty()) { m_u.setZero(); return {}; }
 
     populateForces();
     assemble();
@@ -112,7 +111,7 @@ void FrameSimulator::solve() {
         if (!fixed[i]) { toFree[i] = static_cast<int>(freeList.size()); freeList.push_back(i); }
     const int nf = static_cast<int>(freeList.size());
     m_u.setZero();
-    if (nf == 0) { m_reactions = m_K * m_u - m_F; return; }
+    if (nf == 0) { m_reactions = m_K * m_u - m_F; return {}; }
 
     // Extract KFF and fF.
     std::vector<Eigen::Triplet<double>> sub;
@@ -135,18 +134,18 @@ void FrameSimulator::solve() {
     Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
     solver.compute(Kff);
     if (solver.info() != Eigen::Success) {
-        std::cerr << "FrameSimulator: factorization failed "
-                     "(mechanism or under-constrained)\n";
-        return;
+        return {SolveStatus::MECHANISM,
+                "Structure is a mechanism or under-constrained \xe2\x80\x94 add supports."};
     }
     Eigen::VectorXd uF = solver.solve(fF);
     if (solver.info() != Eigen::Success) {
-        std::cerr << "FrameSimulator: solve failed\n";
-        return;
+        return {SolveStatus::FAILED,
+                "Solver failed \xe2\x80\x94 check model for singularities."};
     }
     for (int li = 0; li < nf; ++li) m_u[freeList[li]] = uF[li];
 
     m_reactions = m_K * m_u - m_F; // residual: reactions at constrained DOFs
+    return {};
 }
 
 std::vector<glm::vec3> FrameSimulator::getNodeTranslations() const {

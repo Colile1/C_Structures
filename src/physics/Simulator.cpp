@@ -2,7 +2,6 @@
 // Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #include "physics/Simulator.hpp"
 #include <Eigen/SparseLU>
-#include <iostream>
 #include <cmath>
 #include <algorithm>
 
@@ -67,10 +66,10 @@ void Simulator::assembleGlobalStiffnessMatrix() {
 // Proper static condensation: extract the free-DOF sub-system and solve it
 // directly.  This avoids the ill-conditioning of the penalty-BC approach and
 // works regardless of whether SimplicialLDLT recognises the matrix as SPD.
-void Simulator::solveStaticForces() {
+SolveResult Simulator::solveStaticForces() {
     m_reactions.setZero();
-    if (m_nodes->empty()) return;
-    if (m_beams->empty()) { m_displacements.setZero(); return; }
+    if (m_nodes->empty()) return {};
+    if (m_beams->empty()) { m_displacements.setZero(); return {}; }
 
     populateForceVector();
     assembleGlobalStiffnessMatrix();
@@ -104,7 +103,7 @@ void Simulator::solveStaticForces() {
     m_displacements.setZero();
     if (nf == 0) { // fully constrained: u = 0, reactions resist all applied load
         m_reactions = m_globalK * m_displacements - m_forces;
-        return;
+        return {};
     }
 
     // --- Step 3: extract KFF and fF ------------------------------------------
@@ -130,14 +129,13 @@ void Simulator::solveStaticForces() {
     Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
     solver.compute(Kff);
     if (solver.info() != Eigen::Success) {
-        std::cerr << "Simulator: factorization failed "
-                     "(structure may be a mechanism or under-constrained)\n";
-        return;
+        return {SolveStatus::MECHANISM,
+                "Structure is a mechanism or under-constrained \xe2\x80\x94 add supports."};
     }
     Eigen::VectorXd uf = solver.solve(ff);
     if (solver.info() != Eigen::Success) {
-        std::cerr << "Simulator: solve failed\n";
-        return;
+        return {SolveStatus::FAILED,
+                "Solver failed \xe2\x80\x94 check model for singularities."};
     }
 
     // --- Step 5: scatter back ------------------------------------------------
@@ -147,6 +145,7 @@ void Simulator::solveStaticForces() {
     // --- Step 6: cache reactions (residual at every DOF) ---------------------
     // r = K*u - F. At free DOFs r ≈ 0; at constrained DOFs r is the support reaction.
     m_reactions = m_globalK * m_displacements - m_forces;
+    return {};
 }
 
 std::vector<glm::vec3> Simulator::getNodeDisplacements() const {

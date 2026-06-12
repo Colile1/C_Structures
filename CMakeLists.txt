@@ -100,6 +100,7 @@ add_executable(tests
     tests/FrameTests.cpp
     tests/MemberForcesTests.cpp
     tests/DistributedLoadTests.cpp
+    tests/SolverStatusTests.cpp
     src/model/Node.cpp
     src/model/Beam.cpp
     src/physics/Simulator.cpp
@@ -125,6 +126,7 @@ add_test(NAME DeterminacyTests COMMAND tests --gtest_filter=Determinacy*)
 add_test(NAME FrameTests       COMMAND tests --gtest_filter=Frame.*)
 add_test(NAME MemberForcesTests     COMMAND tests --gtest_filter=MemberForces*)
 add_test(NAME DistributedLoadTests COMMAND tests --gtest_filter=DistributedLoad*)
+add_test(NAME SolverStatusTests    COMMAND tests --gtest_filter=SolverStatus*)
 
 target_link_libraries(tests PRIVATE
     GTest::GTest
