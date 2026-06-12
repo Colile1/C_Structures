@@ -5,6 +5,15 @@ Format: [YYYY-MM-DD HH:MM]
 
 ---
 
+[2026-05-31 08:00]
+**UI fixes — icons, support quick-set, template camera framing; 8/8 tests passing**
+Three issues fixed:
+1. Icons: File menu items now use FontAwesome 6 icons (FOLDER/Open, FLOPPY_DISK/Save, CAMERA/Screenshot, TABLE/Templates). Template sub-items use RULER/DRAW_POLYGON/HOUSE/WRENCH. Each template entry has a tooltip describing the structure and what it teaches. Beginner/Engineer toggle in toolbar uses GRADUATION_CAP/GEAR icons (were already correct).
+2. Support placement: added a "SUPPORTS" quick-set strip to the left toolbar that appears whenever a node is selected (in any tool mode). Shows six icon buttons — FREE (circle), FIXED (lock), PIN_XY (thumbtack), ROLLER_X/Y/Z (arrow icons) — clicking immediately applies that joint type and triggers a re-solve. Labels change between beginner/engineer mode.
+3. Template camera: `Camera` gains `focusOn(centre, extent)` and `resetToHome()`. When any template (or CSV file) is loaded, the code computes the axis-aligned bounding box of the nodes and calls `camera.focusOn(centre, halfDiag + 1m)` so the structure is always centred and fully visible in the 3D view.
+
+---
+
 [2026-05-31 06:00]
 **Phase 3 + Phase 4 — all improvement-plan phases complete; 8/8 test suites, 100% passing**
 

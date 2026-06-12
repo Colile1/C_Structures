@@ -576,6 +576,12 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 CSVHandler::loadStructure(path, nodes, beams);
                 physics = Simulator(nodes, beams); physics.solveStaticForces();
                 if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); frameSim.solve(); }
+                // Focus camera on the loaded structure.
+                if (!nodes.empty()) {
+                    glm::vec3 mn=nodes[0].getPosition(), mx=mn;
+                    for (const auto& n : nodes) { mn=glm::min(mn,n.getPosition()); mx=glm::max(mx,n.getPosition()); }
+                    camera.focusOn((mn+mx)*0.5f, glm::length(mx-mn)*0.5f+1.0f);
+                }
             }
             if (ui.consumeSaveRequest(path)) {
                 CSVHandler::saveStructure(path, nodes, beams);
@@ -587,6 +593,12 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 distLoads.clear();
                 physics = Simulator(nodes, beams); physics.solveStaticForces();
                 if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); frameSim.solve(); }
+                // Reset camera to frame all template nodes.
+                if (!nodes.empty()) {
+                    glm::vec3 mn=nodes[0].getPosition(), mx=mn;
+                    for (const auto& n : nodes) { mn=glm::min(mn,n.getPosition()); mx=glm::max(mx,n.getPosition()); }
+                    camera.focusOn((mn+mx)*0.5f, glm::length(mx-mn)*0.5f+1.0f);
+                }
             }
         }
 

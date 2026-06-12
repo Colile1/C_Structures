@@ -42,3 +42,17 @@ void Camera::handleScroll(int delta) {
     radius -= static_cast<float>(delta) * 0.5f;
     radius  = std::clamp(radius, 1.0f, 200.0f);
 }
+
+void Camera::resetToHome() {
+    target = glm::vec3(0.0f, 0.0f, 0.0f);
+    radius = 8.0f;
+    yaw    = 45.0f;
+    pitch  = 30.0f;
+}
+
+void Camera::focusOn(const glm::vec3& centre, float extent) {
+    target = centre;
+    radius = std::max(extent * 2.5f, 1.5f);
+    yaw    = 45.0f;
+    pitch  = 30.0f;
+}

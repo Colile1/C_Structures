@@ -371,7 +371,7 @@ void UIHandler::renderUI(SDL_Window* window,
     // ── Top menu bar ──────────────────────────────────────────────────────────
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("New Structure", "Ctrl+N")) {
+            if (ImGui::MenuItem(ICON_FA_FILE "  New Structure", "Ctrl+N")) {
                 pushSnapshot(nodes, beams);
                 nodes.clear(); beams.clear();
                 selectedNode = -1; selectedBeam = -1;
@@ -379,16 +379,34 @@ void UIHandler::renderUI(SDL_Window* window,
                 needsSolveFlag = true;
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Open...", "Ctrl+O")) m_showOpenDlg = true;
-            if (ImGui::MenuItem("Save...", "Ctrl+S")) m_showSaveDlg = true;
+            if (ImGui::MenuItem(ICON_FA_FOLDER "  Open...",        "Ctrl+O")) m_showOpenDlg = true;
+            if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save...",   "Ctrl+S")) m_showSaveDlg = true;
             ImGui::Separator();
-            if (ImGui::MenuItem("Export Screenshot", "F12")) m_wantScreenshot = true;
+            if (ImGui::MenuItem(ICON_FA_CAMERA "  Export Screenshot", "F12")) m_wantScreenshot = true;
             ImGui::Separator();
-            if (ImGui::BeginMenu("Load Template")) {
-                if (ImGui::MenuItem("Simple Beam"))   m_templateIdx = 0;
-                if (ImGui::MenuItem("Triangle Truss")) m_templateIdx = 1;
-                if (ImGui::MenuItem("Portal Frame"))  m_templateIdx = 2;
-                if (ImGui::MenuItem("Cantilever"))    m_templateIdx = 3;
+            if (ImGui::BeginMenu(ICON_FA_TABLE "  Load Template")) {
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Pre-built example structures — great starting points.");
+                if (ImGui::MenuItem(ICON_FA_RULER "  Simple Beam",
+                                    nullptr, false, true))   m_templateIdx = 0;
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip(
+                    "Horizontal beam on two supports with a midpoint load.\n"
+                    "Classic simply-supported beam — shows reactions and midspan deflection.");
+                if (ImGui::MenuItem(ICON_FA_DRAW_POLYGON "  Triangle Truss",
+                                    nullptr, false, true))   m_templateIdx = 1;
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip(
+                    "Two fixed bases, free apex under downward load.\n"
+                    "Shows tension and compression in inclined members.");
+                if (ImGui::MenuItem(ICON_FA_HOUSE "  Portal Frame",
+                                    nullptr, false, true))   m_templateIdx = 2;
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip(
+                    "Two fixed-base columns and a horizontal beam.\n"
+                    "Side load produces bending moments — ideal for frame mode.");
+                if (ImGui::MenuItem(ICON_FA_WRENCH "  Cantilever",
+                                    nullptr, false, true))   m_templateIdx = 3;
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip(
+                    "Fixed wall on the left, free tip on the right.\n"
+                    "Tip load produces a classic triangular moment diagram.");
                 ImGui::EndMenu();
             }
             ImGui::Separator();
@@ -495,6 +513,41 @@ void UIHandler::renderUI(SDL_Window* window,
         ch |= ImGui::DragFloat("Fy", &forceMagY, 50.f, -1e6f, 1e6f, "%.0f");
         ch |= ImGui::DragFloat("Fz", &forceMagZ, 50.f, -1e6f, 1e6f, "%.0f");
         if (ch) forceVector = {forceMagX, forceMagY, forceMagZ};
+    }
+
+    // ── Quick support assignment (shown when a node is selected) ─────────────
+    const bool hasSelNode = (selectedNode >= 0 && selectedNode < (int)nodes.size());
+    if (hasSelNode) {
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TextColored({0.55f,0.85f,1.f,1.f}, "SUPPORTS");
+
+        struct SupportBtn { JointType jt; const char* icon; const char* tip; };
+        static const SupportBtn sbts[] = {
+            { JointType::FREE,     ICON_FA_CIRCLE,        beginnerMode ? "No support (free)" : "FREE" },
+            { JointType::FIXED,    ICON_FA_LOCK,          beginnerMode ? "Fixed wall"        : "FIXED (all DOF)" },
+            { JointType::PIN_XY,   ICON_FA_THUMBTACK,     beginnerMode ? "Pin support"       : "PIN_XY (Ux=Uy=0)" },
+            { JointType::ROLLER_X, ICON_FA_ARROW_RIGHT,   beginnerMode ? "Slide left/right"  : "ROLLER_X (Ux=0)" },
+            { JointType::ROLLER_Y, ICON_FA_ARROW_UP,      beginnerMode ? "Slide up/down"     : "ROLLER_Y (Uy=0)" },
+            { JointType::ROLLER_Z, ICON_FA_ARROW_DOWN_UP_ACROSS_LINE,
+                                                           beginnerMode ? "Slide in/out"      : "ROLLER_Z (Uz=0)" },
+        };
+        JointType curJT = nodes[selectedNode].getJointType();
+        for (const auto& sb : sbts) {
+            bool active = (curJT == sb.jt);
+            if (active) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f,0.52f,0.88f,1.f));
+            char lbl[32]; snprintf(lbl, sizeof lbl, "%s##sup%d", sb.icon, (int)sb.jt);
+            if (ImGui::Button(lbl, ImVec2(40, 28))) {
+                pushSnapshot(nodes, beams);
+                nodes[selectedNode].setJointType(sb.jt);
+                needsSolveFlag = true;
+            }
+            if (active) ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", sb.tip);
+            ImGui::SameLine(0, 2);
+        }
+        ImGui::NewLine();
+        ImGui::Spacing();
     }
 
     ImGui::Separator();

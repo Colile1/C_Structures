@@ -21,6 +21,12 @@ public:
     // Exposes camera position for ray unprojection.
     glm::vec3 getPosition() const;
 
+    // Resets to the default home position (origin, radius 8, yaw 45, pitch 30).
+    void resetToHome();
+
+    // Orbits around a world-space centre with radius sized to fit the given extent.
+    void focusOn(const glm::vec3& centre, float extent);
+
 private:
     glm::vec3 target;
     float radius;
