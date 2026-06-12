@@ -211,7 +211,51 @@ std::array<float, 12> FrameSimulator::getMemberEndForces(const Beam& beam) const
     FrameElement::Vec12 p = FrameElement::localEndForces(
         (*m_nodes)[i].getPosition(), (*m_nodes)[j].getPosition(),
         E, A, G, J, I, I, ue);
+
+    // localEndForces gives only the k·u part. The true member-end forces add the
+    // fixed-end forces f^F = -(local CENL): p_true = k·u - Σ CENL_local. Without
+    // this, a loaded member's end shear/moment are wrong (e.g. a UDL on a pinned
+    // member would report ±wL²/12 instead of zero end moment).
+    const int bi = beamIndex(beam);
+    if (bi >= 0) {
+        const glm::vec3 pi = (*m_nodes)[i].getPosition();
+        const glm::vec3 pj = (*m_nodes)[j].getPosition();
+        const float L = glm::length(pj - pi);
+        for (const auto& dl : m_distLoads) {
+            if (dl.beamIdx != bi) continue;
+            auto cenl = consistentNodalLoadsLocal(dl, pi, pj, L);
+            for (int k = 0; k < 12; ++k) p[k] -= cenl[k];
+        }
+    }
+
     for (int k = 0; k < 12; ++k) out[k] = static_cast<float>(p[k]);
+    return out;
+}
+
+int FrameSimulator::beamIndex(const Beam& beam) const {
+    for (int b = 0; b < static_cast<int>(m_beams->size()); ++b)
+        if (&(*m_beams)[b] == &beam) return b;
+    return -1;
+}
+
+SpanLoad FrameSimulator::getMemberSpanLoad(const Beam& beam) const {
+    SpanLoad out;
+    const int bi = beamIndex(beam);
+    if (bi < 0) return out;
+    const int nNodes = static_cast<int>(m_nodes->size());
+    const int i = beam.getStartIdx(), j = beam.getEndIdx();
+    if (i < 0 || j < 0 || i >= nNodes || j >= nNodes || i == j) return out;
+
+    const glm::vec3 pi = (*m_nodes)[i].getPosition();
+    const glm::vec3 pj = (*m_nodes)[j].getPosition();
+    const float L = glm::length(pj - pi);
+    for (const auto& dl : m_distLoads) {
+        if (dl.beamIdx != bi) continue;
+        SpanLoad s = spanLoadLocal(dl, pi, pj, L);
+        out.qy0 += s.qy0; out.qyL += s.qyL;
+        out.qz0 += s.qz0; out.qzL += s.qzL;
+        for (const auto& m : s.moments) out.moments.push_back(m);
+    }
     return out;
 }
 

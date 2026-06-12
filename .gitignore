@@ -3,6 +3,7 @@ build/
 build_win/
 build_linux/
 build_mac/
+build_tests/
 out/
 
 # ── CMake generated (in-source, legacy) ──────────────────────────
@@ -27,9 +28,11 @@ Makefile
 *.d
 *.pdb
 
-# Named binaries (if placed in repo root by accident)
-C_Structures
-tests
+# Named binaries (if placed in repo root by accident).
+# Anchored + .exe so these don't swallow the C_Structures/ tree or tests/ sources.
+/C_Structures
+/C_Structures.exe
+/tests.exe
 
 # Bundled runtime assets copied into build dirs (originals live in resources/)
 build_win/fa-solid-900.ttf

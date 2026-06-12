@@ -34,7 +34,13 @@ public:
 
     // Member-end forces in local coordinates after the last solve:
     // [N1,Vy1,Vz1,T1,My1,Mz1, N2,Vy2,Vz2,T2,My2,Mz2]. Basis for force diagrams.
+    // Corrected for span loads: the member's fixed-end forces are added back so
+    // the end values are the true internal forces, not just the k·u part.
     std::array<float, 12> getMemberEndForces(const Beam& beam) const;
+
+    // This member's span load projected to its local frame (sum of all its
+    // distributed/moment loads). Feeds sampleMember for the curved diagram.
+    SpanLoad getMemberSpanLoad(const Beam& beam) const;
 
     // Distributed loads (UDL / triangular / moment) applied before the next solve.
     void setDistributedLoads(const std::vector<DistributedLoad>& loads) { m_distLoads = loads; }
@@ -46,6 +52,7 @@ private:
     void assemble();
     void populateForces();
     bool isDofConstrained(const Node& nd, int dof) const; // dof 0..5
+    int  beamIndex(const Beam& beam) const;               // index of beam in m_beams, or -1
 
     std::vector<Node>* m_nodes;
     std::vector<Beam>* m_beams;

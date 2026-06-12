@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 #include <glm/glm.hpp>
+#include "MemberForces.hpp"
 
 // physics/DistributedLoad.hpp : consistent equivalent nodal loads (CENL) for
 // distributed and moment loads on 3D frame members. These are added to the
@@ -28,6 +29,17 @@ struct DistributedLoad {
     float     pos;          // fractional position [0,1] for MOMENT loads
 };
 
+// consistentNodalLoadsLocal
+// Purpose: the 12-element consistent equivalent nodal load vector in the member's
+//          LOCAL frame (before transforming to global). The member's fixed-end
+//          forces are the negation of this; used to correct recovered end forces.
+// Inputs:  dl — the load descriptor; p1, p2 — beam end positions; L — length.
+// Output:  12-vector [f_i(6), f_j(6)] local equivalent nodal forces/moments.
+std::array<double, 12> consistentNodalLoadsLocal(const DistributedLoad& dl,
+                                                 const glm::vec3& p1,
+                                                 const glm::vec3& p2,
+                                                 float L);
+
 // consistentNodalLoads
 // Purpose: return the 12-element consistent equivalent nodal load vector for a
 //          single distributed load on a member.  The result is in GLOBAL
@@ -38,6 +50,17 @@ std::array<double, 12> consistentNodalLoads(const DistributedLoad& dl,
                                              const glm::vec3& p1,
                                              const glm::vec3& p2,
                                              float L);
+
+// spanLoadLocal
+// Purpose: project a distributed load into the member's local frame as a SpanLoad
+//          (linear transverse intensities + any concentrated moment) for
+//          internal-force diagram reconstruction.
+// Inputs:  dl — the load descriptor; p1, p2 — beam end positions; L — length.
+// Output:  local-frame SpanLoad for a single load.
+SpanLoad spanLoadLocal(const DistributedLoad& dl,
+                       const glm::vec3& p1,
+                       const glm::vec3& p2,
+                       float L);
 
 // applyDistributedLoads
 // Purpose: add CENL contributions to an existing 6n global force vector

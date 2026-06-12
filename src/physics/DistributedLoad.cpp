@@ -71,21 +71,26 @@ static std::array<double, 12> momentLocalZ(double M, double L, double a) {
     return f;
 }
 
-std::array<double, 12> consistentNodalLoads(const DistributedLoad& dl,
-                                             const glm::vec3& p1,
-                                             const glm::vec3& p2,
-                                             float Lf)
+// Local-y and local-z components of the global load direction, used by both the
+// CENL assembly and the span-load projection (R rows: 0=local-x,1=local-y,2=local-z).
+static void localDirComponents(const glm::vec3& p1, const glm::vec3& p2,
+                               const glm::vec3& d, double& wy, double& wz) {
+    double rotL = 0.0;
+    FrameElement::Mat3 R = FrameElement::rotation(p1, p2, rotL);
+    wy = R(1,0)*d.x + R(1,1)*d.y + R(1,2)*d.z;
+    wz = R(2,0)*d.x + R(2,1)*d.y + R(2,2)*d.z;
+}
+
+std::array<double, 12> consistentNodalLoadsLocal(const DistributedLoad& dl,
+                                                 const glm::vec3& p1,
+                                                 const glm::vec3& p2,
+                                                 float Lf)
 {
     const double L = static_cast<double>(Lf);
     if (L < 1e-10) return {};
 
-    // Resolve global load direction into member local axes.
-    double rotL = 0.0;
-    FrameElement::Mat3 R = FrameElement::rotation(p1, p2, rotL);
-    // R rows: 0=local-x, 1=local-y, 2=local-z
-    glm::vec3 d = dl.direction;
-    double wy = R(1,0)*d.x + R(1,1)*d.y + R(1,2)*d.z; // component in local y
-    double wz = R(2,0)*d.x + R(2,1)*d.y + R(2,2)*d.z; // component in local z
+    double wy = 0.0, wz = 0.0;
+    localDirComponents(p1, p2, dl.direction, wy, wz);
 
     std::array<double, 12> fLocal{};
 
@@ -114,8 +119,22 @@ std::array<double, 12> consistentNodalLoads(const DistributedLoad& dl,
             break;
         }
     }
+    return fLocal;
+}
+
+std::array<double, 12> consistentNodalLoads(const DistributedLoad& dl,
+                                             const glm::vec3& p1,
+                                             const glm::vec3& p2,
+                                             float Lf)
+{
+    const double L = static_cast<double>(Lf);
+    if (L < 1e-10) return {};
+
+    std::array<double, 12> fLocal = consistentNodalLoadsLocal(dl, p1, p2, Lf);
 
     // Transform local nodal forces back to global: F_global = T^T * f_local
+    double rotL = 0.0;
+    FrameElement::Mat3 R = FrameElement::rotation(p1, p2, rotL);
     FrameElement::Mat12 T = FrameElement::Mat12::Zero();
     for (int b = 0; b < 4; ++b) T.block<3,3>(3*b, 3*b) = R;
     Eigen::Matrix<double, 12, 1> fl;
@@ -125,6 +144,42 @@ std::array<double, 12> consistentNodalLoads(const DistributedLoad& dl,
     std::array<double, 12> out{};
     for (int i = 0; i < 12; ++i) out[i] = fg[i];
     return out;
+}
+
+SpanLoad spanLoadLocal(const DistributedLoad& dl,
+                       const glm::vec3& p1,
+                       const glm::vec3& p2,
+                       float Lf)
+{
+    SpanLoad s;
+    const double L = static_cast<double>(Lf);
+    if (L < 1e-10) return s;
+
+    double wy = 0.0, wz = 0.0;
+    localDirComponents(p1, p2, dl.direction, wy, wz);
+
+    switch (dl.type) {
+        case LoadType::UDL: {
+            double w = static_cast<double>(dl.w);
+            s.qy0 = s.qyL = wy * w;
+            s.qz0 = s.qzL = wz * w;
+            break;
+        }
+        case LoadType::TRIANGULAR: {
+            double ws = static_cast<double>(dl.w);
+            double we = static_cast<double>(dl.w2);
+            s.qy0 = wy * ws; s.qyL = wy * we;
+            s.qz0 = wz * ws; s.qzL = wz * we;
+            break;
+        }
+        case LoadType::MOMENT: {
+            // Concentrated moment about local z at fractional position dl.pos,
+            // matching momentLocalZ used for the CENL.
+            s.moments.push_back({ static_cast<double>(dl.pos), static_cast<double>(dl.w) });
+            break;
+        }
+    }
+    return s;
 }
 
 void applyDistributedLoads(const std::vector<DistributedLoad>& loads,

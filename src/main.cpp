@@ -191,7 +191,8 @@ static void drawForceDiagrams(
         float L = beam.getLength(nodes);
         totalL += L;
         auto ef  = frameSim.getMemberEndForces(beam);
-        auto pts = sampleMember(ef, L, NS);
+        auto sl  = frameSim.getMemberSpanLoad(beam);
+        auto pts = sampleMember(ef, L, NS, sl);
         for (const auto& f : pts) {
             float v = 0.0f;
             switch (diagType) {
@@ -240,7 +241,8 @@ static void drawForceDiagrams(
         glm::vec3 perp = (diagType == 2 || diagType == 4) ? lz : ly;
 
         auto ef  = frameSim.getMemberEndForces(beam);
-        auto pts = sampleMember(ef, L, NS);
+        auto sl  = frameSim.getMemberSpanLoad(beam);
+        auto pts = sampleMember(ef, L, NS, sl);
 
         glm::vec3 prevTip(0.0f);
         for (int k = 0; k < (int)pts.size(); ++k) {
