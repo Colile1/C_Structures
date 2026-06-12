@@ -4,84 +4,90 @@ project(C_Structures LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ── System dependencies ────────────────────────────────────────────────────────
+option(BUILD_APP "Build the graphical application (requires SDL2/OpenGL/GLEW)" ON)
+
+# ── Always-required dependencies ──────────────────────────────────────────────
 find_package(Eigen3 REQUIRED)
 find_package(glm REQUIRED)
-find_package(SDL2 REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
 find_package(GTest REQUIRED)
 
-# ── Dear ImGui (fetched at configure time) ─────────────────────────────────────
-include(FetchContent)
-FetchContent_Declare(
-    imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG        v1.91.5
-    GIT_SHALLOW    TRUE
-)
-FetchContent_MakeAvailable(imgui)
+# ── Graphics application dependencies (skipped when BUILD_APP=OFF) ────────────
+if(BUILD_APP)
+    find_package(SDL2 REQUIRED)
+    find_package(OpenGL REQUIRED)
+    find_package(GLEW REQUIRED)
 
-add_library(imgui_lib STATIC
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
-)
-target_include_directories(imgui_lib PUBLIC
-    ${imgui_SOURCE_DIR}
-    ${imgui_SOURCE_DIR}/backends
-    ${SDL2_INCLUDE_DIRS}
-    ${GLEW_INCLUDE_DIRS}
-)
-target_link_libraries(imgui_lib PUBLIC SDL2::SDL2 OpenGL::GL GLEW::GLEW)
+    # ── Dear ImGui (fetched at configure time) ─────────────────────────────────
+    include(FetchContent)
+    FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG        v1.91.5
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(imgui)
 
-# ── Main executable ────────────────────────────────────────────────────────────
-add_executable(C_Structures
-    src/main.cpp
-    src/build_meta.cpp
-    src/model/Node.cpp
-    src/model/Beam.cpp
-    src/data/CSVHandler.cpp
-    src/physics/Simulator.cpp
-    src/physics/Determinacy.cpp
-    src/physics/FrameElement.cpp
-    src/physics/FrameSimulator.cpp
-    src/physics/MemberForces.cpp
-    src/physics/DistributedLoad.cpp
-    src/ui/UIHandler.cpp
-    src/ui/ReactionsPanel.cpp
-    src/ui/ModelCheckPanel.cpp
-    src/ui/LoadsPanel.cpp
-    src/ui/ResultsPanel.cpp
-    src/ui/GlassBoxPanel.cpp
-    src/ui/Templates.cpp
-    src/visualization/ForceRenderer.cpp
-    src/visualization/RendererUtils.cpp
-    src/graphics/Camera.cpp
-)
+    add_library(imgui_lib STATIC
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    )
+    target_include_directories(imgui_lib PUBLIC
+        ${imgui_SOURCE_DIR}
+        ${imgui_SOURCE_DIR}/backends
+        ${SDL2_INCLUDE_DIRS}
+        ${GLEW_INCLUDE_DIRS}
+    )
+    target_link_libraries(imgui_lib PUBLIC SDL2::SDL2 OpenGL::GL GLEW::GLEW)
 
-target_include_directories(C_Structures PRIVATE
-    ${SDL2_INCLUDE_DIRS}
-    ${EIGEN3_INCLUDE_DIRS}
-    ${GLEW_INCLUDE_DIRS}
-    ${GLM_INCLUDE_DIRS}
-    include/
-    resources/
-)
+    # ── Main executable ────────────────────────────────────────────────────────
+    add_executable(C_Structures
+        src/main.cpp
+        src/build_meta.cpp
+        src/model/Node.cpp
+        src/model/Beam.cpp
+        src/data/CSVHandler.cpp
+        src/physics/Simulator.cpp
+        src/physics/Determinacy.cpp
+        src/physics/FrameElement.cpp
+        src/physics/FrameSimulator.cpp
+        src/physics/MemberForces.cpp
+        src/physics/DistributedLoad.cpp
+        src/ui/UIHandler.cpp
+        src/ui/ReactionsPanel.cpp
+        src/ui/ModelCheckPanel.cpp
+        src/ui/LoadsPanel.cpp
+        src/ui/ResultsPanel.cpp
+        src/ui/GlassBoxPanel.cpp
+        src/ui/Templates.cpp
+        src/visualization/ForceRenderer.cpp
+        src/visualization/RendererUtils.cpp
+        src/graphics/Camera.cpp
+    )
 
-target_link_libraries(C_Structures PRIVATE
-    SDL2::SDL2
-    SDL2::SDL2main
-    OpenGL::GL
-    GLEW::GLEW
-    Eigen3::Eigen
-    imgui_lib
-)
+    target_include_directories(C_Structures PRIVATE
+        ${SDL2_INCLUDE_DIRS}
+        ${EIGEN3_INCLUDE_DIRS}
+        ${GLEW_INCLUDE_DIRS}
+        ${GLM_INCLUDE_DIRS}
+        include/
+        resources/
+    )
 
-# ── Tests ──────────────────────────────────────────────────────────────────────
+    target_link_libraries(C_Structures PRIVATE
+        SDL2::SDL2
+        SDL2::SDL2main
+        OpenGL::GL
+        GLEW::GLEW
+        Eigen3::Eigen
+        imgui_lib
+    )
+endif()
+
+# ── Tests (always built — no SDL/OpenGL needed) ────────────────────────────────
 enable_testing()
 
 add_executable(tests

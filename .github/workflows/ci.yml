@@ -18,18 +18,17 @@ jobs:
         sudo apt-get update -qq
         sudo apt-get install -y --no-install-recommends \
           build-essential cmake ninja-build \
-          libsdl2-dev libeigen3-dev libglm-dev \
-          libglew-dev libgtest-dev \
-          libgl1-mesa-dev libglu1-mesa-dev
+          libeigen3-dev libglm-dev libgtest-dev
 
     - name: Configure
       run: |
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_CXX_STANDARD=17
+          -DCMAKE_CXX_STANDARD=17 \
+          -DBUILD_APP=OFF
 
-    - name: Build
-      run: cmake --build build --parallel
+    - name: Build tests
+      run: cmake --build build --target tests --parallel
 
     - name: Test
       run: ctest --test-dir build --output-on-failure -V
