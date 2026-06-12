@@ -62,7 +62,6 @@ ehthumbs.db
 # ── Internal / meta docs (kept local, not published) ─────────────
 .claude/
 .vscode/
-.github/
 rules.md
 plan.md
 todo.md
