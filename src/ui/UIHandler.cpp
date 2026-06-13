@@ -109,8 +109,10 @@ void UIHandler::pushSnapshot(const std::vector<Node>& nodes,
     snap.nodes.reserve(nodes.size());
     for (const auto& n : nodes) {
         glm::vec3 f = n.getAppliedForce();
+        glm::vec3 m = n.getAppliedMoment();
         glm::vec3 p = n.getPosition();
-        snap.nodes.push_back({p.x, p.y, p.z, n.getJointType(), f.x, f.y, f.z});
+        snap.nodes.push_back({p.x, p.y, p.z, n.getJointType(),
+                              f.x, f.y, f.z, m.x, m.y, m.z});
     }
     snap.beams.reserve(beams.size());
     for (const auto& b : beams) {
@@ -139,6 +141,7 @@ void UIHandler::applySnapshot(const SceneSnapshot& s,
         nodes.emplace_back(ns.x, ns.y, ns.z);
         nodes.back().setJointType(ns.joint);
         nodes.back().applyForce({ns.fx, ns.fy, ns.fz});
+        nodes.back().applyMoment({ns.mx, ns.my, ns.mz});
     }
 
     beams.clear();
@@ -161,8 +164,10 @@ void UIHandler::undo(std::vector<Node>& nodes, std::vector<Beam>& beams) {
     current.nodes.reserve(nodes.size());
     for (const auto& n : nodes) {
         glm::vec3 f = n.getAppliedForce();
+        glm::vec3 m = n.getAppliedMoment();
         glm::vec3 p = n.getPosition();
-        current.nodes.push_back({p.x, p.y, p.z, n.getJointType(), f.x, f.y, f.z});
+        current.nodes.push_back({p.x, p.y, p.z, n.getJointType(),
+                                 f.x, f.y, f.z, m.x, m.y, m.z});
     }
     for (const auto& b : beams) {
         current.beams.push_back({b.getStartIdx(), b.getEndIdx(),
@@ -184,8 +189,10 @@ void UIHandler::redo(std::vector<Node>& nodes, std::vector<Beam>& beams) {
     current.nodes.reserve(nodes.size());
     for (const auto& n : nodes) {
         glm::vec3 f = n.getAppliedForce();
+        glm::vec3 m = n.getAppliedMoment();
         glm::vec3 p = n.getPosition();
-        current.nodes.push_back({p.x, p.y, p.z, n.getJointType(), f.x, f.y, f.z});
+        current.nodes.push_back({p.x, p.y, p.z, n.getJointType(),
+                                 f.x, f.y, f.z, m.x, m.y, m.z});
     }
     for (const auto& b : beams) {
         current.beams.push_back({b.getStartIdx(), b.getEndIdx(),
@@ -692,6 +699,30 @@ void UIHandler::renderUI(SDL_Window* window,
         if (ImGui::Button("Clear Force", ImVec2(-1, 0))) {
             pushSnapshot(nodes, beams);
             node.clearForce();
+            needsSolveFlag = true;
+        }
+
+        ImGui::Spacing();
+        ImGui::TextDisabled(beginnerMode ? "Applied turning effect (N·m)"
+                                         : "Applied moment (N·m)");
+        glm::vec3 mo = node.getAppliedMoment();
+        float mx = mo.x, my = mo.y, mz = mo.z;
+        bool mChg = false;
+        mChg |= ImGui::DragFloat("Mx (N\xc2\xb7m)", &mx, 10.0f, -1e6f, 1e6f, "%.0f");
+        mChg |= ImGui::DragFloat("My (N\xc2\xb7m)", &my, 10.0f, -1e6f, 1e6f, "%.0f");
+        mChg |= ImGui::DragFloat("Mz (N\xc2\xb7m)", &mz, 10.0f, -1e6f, 1e6f, "%.0f");
+        if (mChg) {
+            pushSnapshot(nodes, beams);
+            node.clearMoment();
+            node.applyMoment({mx, my, mz});
+            needsSolveFlag = true;
+        }
+        if (ImGui::IsItemHovered() && beginnerMode)
+            ImGui::SetTooltip("A concentrated moment twists the joint.\n"
+                              "Only acts in frame mode (rigid joints).");
+        if (ImGui::Button("Clear Moment", ImVec2(-1, 0))) {
+            pushSnapshot(nodes, beams);
+            node.clearMoment();
             needsSolveFlag = true;
         }
         ImGui::Spacing();

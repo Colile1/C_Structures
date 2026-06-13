@@ -33,7 +33,11 @@ void FrameSimulator::populateForces() {
         m_F[DPN*i + 0] = static_cast<double>(f.x);
         m_F[DPN*i + 1] = static_cast<double>(f.y);
         m_F[DPN*i + 2] = static_cast<double>(f.z);
-        // Applied nodal moments (Mx, My, Mz) can be set via Node::applyMoment (Phase 2.3+).
+        // Concentrated nodal moments drive the three rotational DOFs (Mx, My, Mz).
+        glm::vec3 m = (*m_nodes)[i].getAppliedMoment();
+        m_F[DPN*i + 3] = static_cast<double>(m.x);
+        m_F[DPN*i + 4] = static_cast<double>(m.y);
+        m_F[DPN*i + 5] = static_cast<double>(m.z);
     }
 
     // Consistent equivalent nodal loads from distributed/moment loads.

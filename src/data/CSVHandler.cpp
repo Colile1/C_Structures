@@ -10,13 +10,13 @@ void CSVHandler::loadStructure(const std::string& path,
     std::ifstream file(path);
     std::string line;
     
-    // Node format: x,y,z,fixed (0/1)
-    // Beam format: start_index,end_index,youngs_modulus,cross_section
+    // Node format: x y z joint [mx my mz]   (moment columns optional, default 0)
+    // Beam format: start_index end_index youngs_modulus cross_section
     while (getline(file, line)) {
         std::stringstream ss(line);
         std::string type;
         ss >> type;
-        
+
         if (type == "NODE") {
             float x, y, z;
             int joint;
@@ -28,6 +28,12 @@ void CSVHandler::loadStructure(const std::string& path,
                 nodes.back().setJointType(static_cast<JointType>(joint));
             else
                 nodes.back().setJointType(JointType::FREE);
+
+            // Optional concentrated nodal moment (Mx, My, Mz). Older files omit
+            // these columns, so apply only when all three parse successfully.
+            float mx, my, mz;
+            if (ss >> mx >> my >> mz)
+                nodes.back().applyMoment({mx, my, mz});
         }
         else if (type == "BEAM") {
             int startIdx, endIdx;
@@ -48,12 +54,15 @@ void CSVHandler::saveStructure(const std::string& path,
     std::ofstream file(path);
     
     // Save nodes. Joint field: 0=FREE,1=FIXED,2=PIN_XY,3=ROLLER_X,4=ROLLER_Y,5=ROLLER_Z
+    // Trailing three columns are the concentrated nodal moment (Mx, My, Mz).
     for (size_t i = 0; i < nodes.size(); ++i) {
         const Node& node = nodes[i];
+        const glm::vec3 m = node.getAppliedMoment();
         file << "NODE " << node.getPosition().x << " "
              << node.getPosition().y << " "
              << node.getPosition().z << " "
-             << static_cast<int>(node.getJointType()) << "\n";
+             << static_cast<int>(node.getJointType()) << " "
+             << m.x << " " << m.y << " " << m.z << "\n";
     }
     
     // Save beams. Connectivity is stored directly as node indices, so the

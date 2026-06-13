@@ -114,6 +114,48 @@ TEST(CSVHandler, JointTypeRoundTrip) {
     std::remove(path.c_str());
 }
 
+TEST(CSVHandler, NodalMomentRoundTrip) {
+    const std::string path = "test_moment_tmp.csv";
+    std::vector<Node> nodes;
+    nodes.emplace_back(0.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::FIXED);
+    nodes.emplace_back(2.0f, 0.0f, 0.0f); nodes.back().applyMoment({0.0f, 0.0f, 5000.0f});
+    nodes.emplace_back(4.0f, 0.0f, 0.0f); nodes.back().applyMoment({100.0f, -200.0f, 300.0f});
+    std::vector<Beam> beams;
+    CSVHandler::saveStructure(path, nodes, beams);
+
+    std::vector<Node> loaded;
+    std::vector<Beam> loadedBeams;
+    CSVHandler::loadStructure(path, loaded, loadedBeams);
+
+    ASSERT_EQ(loaded.size(), 3u);
+    EXPECT_NEAR(loaded[0].getAppliedMoment().z, 0.0f,    1e-3f);
+    EXPECT_NEAR(loaded[1].getAppliedMoment().z, 5000.0f, 1e-3f);
+    EXPECT_NEAR(loaded[2].getAppliedMoment().x, 100.0f,  1e-3f);
+    EXPECT_NEAR(loaded[2].getAppliedMoment().y, -200.0f, 1e-3f);
+    EXPECT_NEAR(loaded[2].getAppliedMoment().z, 300.0f,  1e-3f);
+    std::remove(path.c_str());
+}
+
+// A node file written without moment columns (legacy format) must still load,
+// leaving the moment at zero rather than failing to parse.
+TEST(CSVHandler, LegacyNodeWithoutMomentColumns) {
+    const std::string path = "test_legacy_tmp.csv";
+    {
+        std::ofstream f(path);
+        f << "NODE 0 0 0 1\n";
+        f << "NODE 2 0 0 0\n";
+    }
+    std::vector<Node> loaded;
+    std::vector<Beam> loadedBeams;
+    CSVHandler::loadStructure(path, loaded, loadedBeams);
+
+    ASSERT_EQ(loaded.size(), 2u);
+    EXPECT_EQ(loaded[0].getJointType(), JointType::FIXED);
+    EXPECT_NEAR(loaded[0].getAppliedMoment().z, 0.0f, 1e-6f);
+    EXPECT_NEAR(loaded[1].getAppliedMoment().z, 0.0f, 1e-6f);
+    std::remove(path.c_str());
+}
+
 TEST(CSVHandler, BeamMaterialPropertiesPreserved) {
     const std::string path = "test_material_tmp.csv";
     std::vector<Node> nodes;

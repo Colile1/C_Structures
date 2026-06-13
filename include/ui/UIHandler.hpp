@@ -16,6 +16,7 @@ struct NodeState {
     float x, y, z;
     JointType joint;
     float fx, fy, fz;
+    float mx, my, mz;            // concentrated nodal moment
 };
 struct BeamState {
     int   iStart, iEnd;          // indices into node list

@@ -15,11 +15,18 @@ enum class JointType {
 class Node {
 public:
     Node(float x, float y, float z)
-        : position(x, y, z), jointType(JointType::FREE), appliedForce(0.0f, 0.0f, 0.0f) {}
+        : position(x, y, z), appliedForce(0.0f, 0.0f, 0.0f),
+          appliedMoment(0.0f, 0.0f, 0.0f), jointType(JointType::FREE) {}
 
     void applyForce(const glm::vec3& force) { appliedForce += force; }
     glm::vec3 getAppliedForce() const { return appliedForce; }
     glm::vec3 getPosition()     const { return position; }
+
+    // Concentrated nodal moment (Mx, My, Mz) about the global axes. Only the
+    // frame solver (6 DOF/node) acts on it; the truss solver ignores rotations.
+    void applyMoment(const glm::vec3& moment) { appliedMoment += moment; }
+    glm::vec3 getAppliedMoment() const { return appliedMoment; }
+    void clearMoment() { appliedMoment = {0.0f, 0.0f, 0.0f}; }
 
     JointType getJointType()          const { return jointType; }
     void      setJointType(JointType t)     { jointType = t; }
@@ -47,5 +54,6 @@ public:
 private:
     glm::vec3 position;
     glm::vec3 appliedForce;
+    glm::vec3 appliedMoment;
     JointType jointType;
 };
