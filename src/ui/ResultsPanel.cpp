@@ -8,8 +8,7 @@
 void renderResultsPanel(const std::vector<Node>& nodes,
                         const std::vector<Beam>& beams,
                         const Simulator& physics,
-                        bool beginnerMode,
-                        float dispScale)
+                        bool beginnerMode)
 {
     if (nodes.empty() || beams.empty()) return;
 

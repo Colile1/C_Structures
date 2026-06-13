@@ -437,7 +437,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
     UIHandler ui;
     ui.initialize(WIN_W, WIN_H);
 
-    float dispScale = 50.0f; // multiply displacements for visibility
+    float dispMult = 1.0f; // user slider multiplier on top of the auto scale
     bool running   = true;
     bool rmb       = false;
 
@@ -510,13 +510,28 @@ int main(int /*argc*/, char* /*argv*/[]) {
             ? frameSim.getNodeTranslations()
             : physics.getNodeDisplacements();
 
+        // Auto-scale: target max nodal displacement ≈ 10% of average member length.
+        float autoDispScale = 100.0f;
+        if (!beams.empty() && !displacements.empty()) {
+            float maxDisp = 0.0f;
+            for (const auto& d : displacements)
+                maxDisp = std::max(maxDisp, glm::length(d));
+            float totalL = 0.0f;
+            for (const auto& beam : beams)
+                totalL += beam.getLength(nodes);
+            float avgL = totalL / (float)beams.size();
+            if (maxDisp > 1e-8f)
+                autoDispScale = 0.1f * avgL / maxDisp;
+        }
+        float effectiveScale = autoDispScale * dispMult;
+
         for (const auto& beam : beams) {
             int si = beam.getStartIdx();
             int ei = beam.getEndIdx();
             if (si < 0 || si >= (int)displacements.size()) continue;
             if (ei < 0 || ei >= (int)displacements.size()) continue;
-            glm::vec3 s  = nodes[si].getPosition() + displacements[si] * dispScale;
-            glm::vec3 ep = nodes[ei].getPosition() + displacements[ei] * dispScale;
+            glm::vec3 s  = nodes[si].getPosition() + displacements[si] * effectiveScale;
+            glm::vec3 ep = nodes[ei].getPosition() + displacements[ei] * effectiveScale;
             float force = frameOn
                 ? frameSim.getMemberEndForces(beam)[0]   // axial N at node 1 end
                 : physics.getBeamForce(beam);
@@ -531,7 +546,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
 
         for (int i = 0; i < (int)nodes.size(); ++i) {
             if (i >= (int)displacements.size()) break;
-            glm::vec3 pos = nodes[i].getPosition() + displacements[i] * dispScale;
+            glm::vec3 pos = nodes[i].getPosition() + displacements[i] * effectiveScale;
             glm::vec3 col;
             switch (nodes[i].getJointType()) {
                 case JointType::FIXED:    col = {0.90f, 0.25f, 0.25f}; break;
@@ -552,7 +567,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        ui.renderUI(window, nodes, beams, dispScale);
+        ui.renderUI(window, nodes, beams, dispMult, autoDispScale);
         renderReactionsPanel(nodes, physics);
         renderModelCheckPanel(nodes, beams, frameOn, &lastSolveResult);
         if (frameOn) {
@@ -564,7 +579,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
         }
 
         // ── New panels ─────────────────────────────────────────────────────────
-        renderResultsPanel(nodes, beams, physics, ui.getBeginnerMode(), dispScale);
+        renderResultsPanel(nodes, beams, physics, ui.getBeginnerMode());
         {
             bool gb = ui.getShowGlassBox();
             if (gb) renderGlassBoxPanel(nodes, beams, physics, &gb);
@@ -611,8 +626,8 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 int si = beam.getStartIdx(), ei = beam.getEndIdx();
                 if (si < 0 || si >= (int)displacements.size()) continue;
                 if (ei < 0 || ei >= (int)displacements.size()) continue;
-                glm::vec3 a   = nodes[si].getPosition() + displacements[si] * dispScale;
-                glm::vec3 b   = nodes[ei].getPosition() + displacements[ei] * dispScale;
+                glm::vec3 a   = nodes[si].getPosition() + displacements[si] * effectiveScale;
+                glm::vec3 b   = nodes[ei].getPosition() + displacements[ei] * effectiveScale;
                 glm::vec4 clip = proj * view * glm::vec4((a + b) * 0.5f, 1.0f);
                 if (clip.w <= 0.0f) continue;
                 glm::vec3 ndc = glm::vec3(clip) / clip.w;

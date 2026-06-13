@@ -7,6 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <string>
 #include <SDL2/SDL.h>
 
@@ -363,7 +364,8 @@ static const char* toolLabel(ToolMode m) {
 void UIHandler::renderUI(SDL_Window* window,
                           std::vector<Node>& nodes,
                           std::vector<Beam>& beams,
-                          float& dispScale) {
+                          float& dispMult,
+                          float autoDispScale) {
     int w = 0, h = 0;
     SDL_GetWindowSize(window, &w, &h);
     const float menuH = ImGui::GetFrameHeight();
@@ -588,8 +590,11 @@ void UIHandler::renderUI(SDL_Window* window,
     ImGui::Spacing();
     ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "DISPLAY");
     ImGui::Separator();
-    ImGui::SliderFloat("Disp.Scale", &dispScale, 1.0f, 5000.0f, "%.0fx",
+    ImGui::SliderFloat("Disp. mult.", &dispMult, 0.1f, 20.0f, "%.2f\xc3\x97",
                        ImGuiSliderFlags_Logarithmic);
+    char scaleLabel[48];
+    std::snprintf(scaleLabel, sizeof scaleLabel, "\xc3\x97%.0f (auto)", autoDispScale * dispMult);
+    ImGui::TextDisabled("%s", scaleLabel);
     ImGui::Checkbox("Show member forces", &showForceLabels);
 
     // ── Analysis mode ─────────────────────────────────────────────────────────

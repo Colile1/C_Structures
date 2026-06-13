@@ -43,7 +43,8 @@ public:
     void renderUI(SDL_Window* window,
                   std::vector<Node>& nodes,
                   std::vector<Beam>& beams,
-                  float& dispScale);
+                  float& dispMult,
+                  float autoDispScale);
 
     ToolMode  getCurrentTool()     const { return currentTool; }
     glm::vec3 getForceVector()     const { return forceVector; }
