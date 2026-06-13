@@ -66,6 +66,7 @@ if(BUILD_APP)
         src/ui/Templates.cpp
         src/visualization/ForceRenderer.cpp
         src/graphics/Camera.cpp
+        src/graphics/IconLibrary.cpp
     )
 
     target_include_directories(C_Structures PRIVATE
@@ -75,6 +76,7 @@ if(BUILD_APP)
         ${GLM_INCLUDE_DIRS}
         include/
         resources/
+        third_party/nanosvg/
     )
 
     target_link_libraries(C_Structures PRIVATE

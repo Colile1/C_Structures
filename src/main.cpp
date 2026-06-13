@@ -650,6 +650,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
     }
 
     // ── Cleanup ────────────────────────────────────────────────────────────────
+    ui.shutdownIcons(); // free icon GL textures while the context is still current
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();

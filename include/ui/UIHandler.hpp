@@ -8,6 +8,7 @@
 #include <string>
 #include "../model/Node.hpp"
 #include "../model/Beam.hpp"
+#include "../graphics/IconLibrary.hpp"
 
 enum class ToolMode { SELECT, NODE_PLACEMENT, BEAM_CREATION, FORCE_APPLICATION };
 
@@ -69,6 +70,10 @@ public:
     int       consumeTemplateRequest() { int v = m_templateIdx; m_templateIdx = -1; return v; }
     bool consumeNeedsSolve() { bool v = needsSolveFlag; needsSolveFlag = false; return v; }
 
+    // Release icon-library GL textures. Call from main while the GL context is
+    // still current (before SDL_GL_DeleteContext).
+    void shutdownIcons() { m_icons.shutdown(); }
+
     glm::vec3 currentMouseWorldPos = {};
 
     // ── Undo/redo ─────────────────────────────────────────────────────────────
@@ -94,6 +99,10 @@ private:
     int       diagramType     = 5;      // 0=N  1=Vy  2=Vz  3=T  4=My  5=Mz
     bool      beginnerMode    = true;   // hides E/I details, shows friendly names
     bool      showGlassBox    = false;  // show stiffness matrix (Engineer mode)
+    bool      showPalette     = true;   // left component-icon palette window
+
+    // SVG icon set (joints / sections / loads) with the symbol/2D/3D view toggle.
+    IconLibrary m_icons;
     // Pending one-shot requests consumed by main.cpp
     std::string m_pendingLoad;
     std::string m_pendingSave;
@@ -130,6 +139,14 @@ private:
                             const glm::mat4& proj) const;
 
     void applySnapshot(const SceneSnapshot& s,
+                       std::vector<Node>& nodes,
+                       std::vector<Beam>& beams);
+
+    // Left component palette: joint / section / load icons with the
+    // symbol/realistic-2D/realistic-3D view toggle. Clicking a joint icon
+    // assigns that support to the selected node; the point-load icon selects
+    // the Force tool. Other icons are an illustrative reference.
+    void renderPalette(float originY, float availH,
                        std::vector<Node>& nodes,
                        std::vector<Beam>& beams);
 

@@ -366,6 +366,140 @@ static const char* toolLabel(ToolMode m) {
     return "";
 }
 
+// ── Component palette ───────────────────────────────────────────────────────────
+
+// imageOrTextButton
+// Purpose: draw an icon image-button, falling back to a text button when the SVG
+//          could not be rasterised (e.g. resources/ missing). A light backdrop
+//          keeps the dark schematic symbols legible on the dark UI theme.
+// Output:  true when clicked.
+static bool imageOrTextButton(IconLibrary& icons, const char* cat, const char* name,
+                              float side, bool active) {
+    ImTextureID tex = icons.texture(cat, name);
+    const ImVec4 bg = active ? ImVec4(0.80f, 0.90f, 1.00f, 1.0f)   // selected: bluish
+                             : ImVec4(0.93f, 0.95f, 0.97f, 1.0f);  // card white
+    if (tex) {
+        char id[64]; std::snprintf(id, sizeof id, "##ic_%s_%s", cat, name);
+        return ImGui::ImageButton(id, tex, ImVec2(side, side),
+                                  ImVec2(0, 0), ImVec2(1, 1), bg, ImVec4(1, 1, 1, 1));
+    }
+    char lbl[48]; std::snprintf(lbl, sizeof lbl, "%.6s##t_%s", name, name);
+    if (active) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.52f, 0.88f, 1.0f));
+    bool c = ImGui::Button(lbl, ImVec2(side + 8, side + 8));
+    if (active) ImGui::PopStyleColor();
+    return c;
+}
+
+void UIHandler::renderPalette(float originY, float availH,
+                              std::vector<Node>& nodes,
+                              std::vector<Beam>& beams) {
+    const float palW = 250.0f;
+    ImGui::SetNextWindowPos(ImVec2(146.0f, originY), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(palW, availH), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowBgAlpha(0.94f);
+    if (!ImGui::Begin("Component Palette", &showPalette)) { ImGui::End(); return; }
+
+    // ── View-mode toggle (symbol / realistic-2D / realistic-3D) ────────────────
+    ImGui::TextDisabled("Icon view");
+    auto modeBtn = [&](const char* label, IconView v) {
+        bool on = (m_icons.view() == v);
+        if (on) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.52f, 0.88f, 1.0f));
+        if (ImGui::Button(label, ImVec2(74, 0))) m_icons.setView(v);
+        if (on) ImGui::PopStyleColor();
+    };
+    modeBtn("Symbol",  IconView::Symbol);      ImGui::SameLine(0, 3);
+    modeBtn("2D",      IconView::Realistic2D); ImGui::SameLine(0, 3);
+    modeBtn("3D",      IconView::Realistic3D);
+    ImGui::Separator();
+
+    const float side  = 40.0f;
+    const float cellW = side + 14.0f;          // button + ImGui frame padding/spacing
+    auto perRow = [&]() {
+        float avail = ImGui::GetContentRegionAvail().x;
+        return std::max(1, static_cast<int>(avail / cellW));
+    };
+
+    const bool hasSel = (selectedNode >= 0 && selectedNode < (int)nodes.size());
+    JointType  curJT  = hasSel ? nodes[selectedNode].getJointType() : JointType::FREE;
+
+    // ── Joints & supports ──────────────────────────────────────────────────────
+    ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "JOINTS & SUPPORTS");
+    if (hasSel) ImGui::TextDisabled("Click to set selected node's support.");
+    else        ImGui::TextDisabled("Select a node to assign a support.");
+    struct JIcon { const char* name; const char* title; int jt; };
+    static const JIcon joints[] = {
+        {"free",          "Free node (internal joint)",   (int)JointType::FREE},
+        {"fixed",         "Fixed support (encastré)",     (int)JointType::FIXED},
+        {"pin_xy",        "Pinned support (pin / hinge)", (int)JointType::PIN_XY},
+        {"roller_x",      "Roller support (X-constrained)", (int)JointType::ROLLER_X},
+        {"roller_y",      "Roller support (Y-constrained)", (int)JointType::ROLLER_Y},
+        {"roller_z",      "Roller support (Z-constrained)", (int)JointType::ROLLER_Z},
+        {"internal_hinge","Internal hinge (set per member-end on a beam)", -1},
+        {"rigid",         "Rigid moment connection (default joint)",       -1},
+    };
+    int col = 0, pr = perRow();
+    for (const auto& j : joints) {
+        bool active = hasSel && j.jt >= 0 && curJT == static_cast<JointType>(j.jt);
+        if (imageOrTextButton(m_icons, "joints", j.name, side, active) && j.jt >= 0 && hasSel) {
+            pushSnapshot(nodes, beams);
+            nodes[selectedNode].setJointType(static_cast<JointType>(j.jt));
+            needsSolveFlag = true;
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", j.title);
+        if (++col % pr != 0) ImGui::SameLine();
+    }
+    if (col % pr != 0) ImGui::NewLine();
+    ImGui::Spacing();
+
+    // ── Beam sections & types (illustrative reference) ─────────────────────────
+    ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "SECTIONS & TYPES");
+    struct NIcon { const char* name; const char* title; };
+    static const NIcon sections[] = {
+        {"i_beam","I-section (universal beam)"}, {"h_column","H-section (universal column)"},
+        {"channel_c","Channel (C / PFC)"},       {"angle_l","Angle (L)"},
+        {"t_section","Tee (T)"},                 {"box_rhs","Box / RHS (hollow rect)"},
+        {"pipe_chs","Pipe / CHS (hollow round)"},{"solid_rect","Solid rectangular bar"},
+        {"solid_round","Solid round bar"},       {"truss","Truss member"},
+        {"simply_supported","Simply supported beam"}, {"cantilever","Cantilever beam"},
+        {"continuous","Continuous beam"},        {"fixed_both","Fixed-fixed beam"},
+        {"overhanging","Overhanging beam"},
+    };
+    col = 0; pr = perRow();
+    for (const auto& s : sections) {
+        imageOrTextButton(m_icons, "beams", s.name, side, false);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", s.title);
+        if (++col % pr != 0) ImGui::SameLine();
+    }
+    if (col % pr != 0) ImGui::NewLine();
+    ImGui::Spacing();
+
+    // ── Forces & loads ─────────────────────────────────────────────────────────
+    ImGui::TextColored({0.55f, 0.85f, 1.0f, 1.0f}, "FORCES & LOADS");
+    static const NIcon forces[] = {
+        {"point_load","Point load — click to pick the Force tool"},
+        {"moment","Moment (couple) — set Mx/My/Mz in node properties"},
+        {"udl","Uniformly distributed load — add in the Loads panel (frame mode)"},
+        {"triangular_load","Triangular load — add in the Loads panel (frame mode)"},
+        {"self_weight","Self-weight — toggle in the Loads panel"},
+        {"tension","Axial tension (result colour)"},
+        {"compression","Axial compression (result colour)"},
+        {"shear","Shear force (diagram)"},
+        {"reaction","Support reaction (Reactions panel)"},
+    };
+    col = 0; pr = perRow();
+    for (const auto& f : forces) {
+        bool isPoint = std::string(f.name) == "point_load";
+        bool active  = isPoint && currentTool == ToolMode::FORCE_APPLICATION;
+        if (imageOrTextButton(m_icons, "forces", f.name, side, active) && isPoint)
+            currentTool = ToolMode::FORCE_APPLICATION;
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", f.title);
+        if (++col % pr != 0) ImGui::SameLine();
+    }
+    if (col % pr != 0) ImGui::NewLine();
+
+    ImGui::End();
+}
+
 // ── UI ────────────────────────────────────────────────────────────────────────
 
 void UIHandler::renderUI(SDL_Window* window,
@@ -445,6 +579,7 @@ void UIHandler::renderUI(SDL_Window* window,
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
+            ImGui::MenuItem("Component Palette", nullptr, &showPalette);
             ImGui::MenuItem("Stiffness Matrix", nullptr, &showGlassBox);
             ImGui::Separator();
             if (ImGui::MenuItem(beginnerMode ? "Switch to Engineer Mode" : "Switch to Beginner Mode"))
@@ -645,6 +780,23 @@ void UIHandler::renderUI(SDL_Window* window,
         ImGui::Spacing();
         ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "SELECTED NODE");
         ImGui::Separator();
+
+        // Picture of the node's current support type (current icon view mode).
+        {
+            static const char* jIcon[] = {
+                "free", "fixed", "pin_xy", "roller_x", "roller_y", "roller_z"
+            };
+            int jti = static_cast<int>(node.getJointType());
+            if (jti >= 0 && jti < 6) {
+                if (ImTextureID t = m_icons.texture("joints", jIcon[jti])) {
+                    const float s = 52.0f;
+                    ImVec2 p = ImGui::GetCursorScreenPos();
+                    ImGui::GetWindowDrawList()->AddRectFilled(
+                        p, ImVec2(p.x + s, p.y + s), IM_COL32(238, 242, 247, 255), 3.0f);
+                    ImGui::Image(t, ImVec2(s, s));
+                }
+            }
+        }
 
         glm::vec3 pos = node.getPosition();
         float px = pos.x, py = pos.y, pz = pos.z;
@@ -858,6 +1010,10 @@ void UIHandler::renderUI(SDL_Window* window,
                 (int)m_undoStack.size(), (int)m_redoStack.size());
     ImGui::End();
     ImGui::PopStyleVar();
+
+    // ── Component palette (left, icon-based; toggled from the View menu) ────────
+    if (showPalette)
+        renderPalette(menuH, (float)h - menuH - 24.0f, nodes, beams);
 
     // ── File open/save popups (modal text-input dialogs) ───────────────────────
     if (m_showOpenDlg) { ImGui::OpenPopup("Open File##dlg"); m_showOpenDlg = false; }
