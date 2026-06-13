@@ -25,6 +25,16 @@ bool FrameSimulator::isDofConstrained(const Node& nd, int dof) const {
     return nd.getJointType() == JointType::FIXED;
 }
 
+// Map a beam's internal-hinge flags to the element's local release mask. A
+// moment release frees the two transverse bending rotations (ry, rz) at that
+// end so the member transmits force but no bending moment to its node.
+static FrameElement::Releases beamReleases(const Beam& beam) {
+    FrameElement::Releases r{};
+    if (beam.getStartMomentRelease()) { r[4]  = true; r[5]  = true; }
+    if (beam.getEndMomentRelease())   { r[10] = true; r[11] = true; }
+    return r;
+}
+
 std::vector<DistributedLoad> FrameSimulator::effectiveLoads() const {
     std::vector<DistributedLoad> loads = m_distLoads;
     if (m_selfWeight) {
@@ -84,7 +94,7 @@ void FrameSimulator::assemble() {
 
         FrameElement::Mat12 ke = FrameElement::globalStiffness(
             (*m_nodes)[i].getPosition(), (*m_nodes)[j].getPosition(),
-            E, A, G, J, Iy, Iz);
+            E, A, G, J, Iy, Iz, beamReleases(beam));
 
         const int map[12] = {
             DPN*i+0, DPN*i+1, DPN*i+2, DPN*i+3, DPN*i+4, DPN*i+5,
@@ -223,7 +233,7 @@ std::array<float, 12> FrameSimulator::getMemberEndForces(const Beam& beam) const
 
     FrameElement::Vec12 p = FrameElement::localEndForces(
         (*m_nodes)[i].getPosition(), (*m_nodes)[j].getPosition(),
-        E, A, G, J, I, I, ue);
+        E, A, G, J, I, I, ue, beamReleases(beam));
 
     // localEndForces gives only the k·u part. The true member-end forces add the
     // fixed-end forces f^F = -(local CENL): p_true = k·u - Σ CENL_local. Without

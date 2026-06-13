@@ -89,6 +89,79 @@ TEST(Frame, CantileverTipMoment) {
     EXPECT_NEAR(rm.z, -M, std::abs(M) * 1e-3f);        // base balances the applied moment
 }
 
+// Member-end releases (internal hinges): a released end transmits force but no
+// bending moment. Releasing the two outer ends of a beam built from two members
+// between FIXED supports turns a fixed-fixed beam into a simply supported one.
+// A central point load P over span L then gives support reactions P/2, no
+// support moment (a fixed end would carry PL/8), and mid-span deflection
+// PL³/(48EI). The FIXED end nodes also keep the model stable out of plane.
+TEST(Frame, EndReleasesGiveSimplySupportedBeam) {
+    const float E = 200e9f, A = 1e-2f, I = 1e-5f, L = 4.0f, P = 2000.0f;
+    Node a(0.0f,    0.0f, 0.0f);  a.setJointType(JointType::FIXED);
+    Node c(L*0.5f,  0.0f, 0.0f);
+    Node b(L,       0.0f, 0.0f);  b.setJointType(JointType::FIXED);
+    std::vector<Node> nodes { a, c, b };
+
+    Beam ac = makeBeam(0, 1, E, A, I); ac.setStartMomentRelease(true); // pin at A
+    Beam cb = makeBeam(1, 2, E, A, I); cb.setEndMomentRelease(true);   // pin at B
+    std::vector<Beam> beams { ac, cb };
+    nodes[1].applyForce(glm::vec3(0.0f, -P, 0.0f));
+
+    FrameSimulator sim(nodes, beams);
+    sim.solve();
+
+    auto u = sim.getNodeTranslations();
+    const float vy = -P * L*L*L / (48.0f * E * I);
+    EXPECT_NEAR(u[1].y, vy, std::abs(vy) * 1e-3f);
+
+    EXPECT_NEAR(sim.getNodeReactionForce(0).y, P*0.5f, 1.0f);
+    EXPECT_NEAR(sim.getNodeReactionForce(2).y, P*0.5f, 1.0f);
+    // Hinged supports carry essentially no moment (a fixed end would show PL/8).
+    EXPECT_NEAR(sim.getNodeReactionMoment(0).z, 0.0f, std::abs(P*L/8.0f) * 1e-3f);
+
+    glm::vec3 net;
+    EXPECT_TRUE(sim.checkForceEquilibrium(net));
+}
+
+// Three-hinged portal frame (the textbook member-release case): two pinned bases
+// — modelled as a FIXED node with the column base moment released — and an
+// internal hinge at the crown make the frame statically determinate. A downward
+// load P at the crown gives vertical reactions P/2 and a horizontal thrust
+// PL/(4h) at each base, with zero moment at the hinged bases, independent of EI.
+TEST(Frame, ThreeHingedPortalReactions) {
+    const float E = 200e9f, A = 1e-2f, I = 1e-5f;
+    const float L = 4.0f, h = 3.0f, P = 1200.0f;
+    Node A0(0.0f,   0.0f, 0.0f);  A0.setJointType(JointType::FIXED); // base left
+    Node B (0.0f,   h,    0.0f);
+    Node C (L*0.5f, h,    0.0f);                                      // crown
+    Node D (L,      h,    0.0f);
+    Node Eb(L,      0.0f, 0.0f);  Eb.setJointType(JointType::FIXED); // base right
+    std::vector<Node> nodes { A0, B, C, D, Eb };
+
+    Beam ab = makeBeam(0, 1, E, A, I); ab.setStartMomentRelease(true); // hinge, base left
+    Beam bc = makeBeam(1, 2, E, A, I); bc.setEndMomentRelease(true);   // hinge at crown
+    Beam cd = makeBeam(2, 3, E, A, I);
+    Beam ed = makeBeam(4, 3, E, A, I); ed.setStartMomentRelease(true); // hinge, base right
+    std::vector<Beam> beams { ab, bc, cd, ed };
+    nodes[2].applyForce(glm::vec3(0.0f, -P, 0.0f));
+
+    FrameSimulator sim(nodes, beams);
+    sim.solve();
+
+    const float V = P * 0.5f;
+    const float H = P * L / (4.0f * h);
+    glm::vec3 rA = sim.getNodeReactionForce(0);
+    glm::vec3 rE = sim.getNodeReactionForce(4);
+    EXPECT_NEAR(rA.y,  V, 1.0f);
+    EXPECT_NEAR(rE.y,  V, 1.0f);
+    EXPECT_NEAR(rA.x,  H, std::abs(H) * 2e-3f);   // inward thrust at left base
+    EXPECT_NEAR(rE.x, -H, std::abs(H) * 2e-3f);   // inward thrust at right base
+    EXPECT_NEAR(sim.getNodeReactionMoment(0).z, 0.0f, std::abs(P*L) * 1e-3f);
+
+    glm::vec3 net;
+    EXPECT_TRUE(sim.checkForceEquilibrium(net));
+}
+
 // Axial load on a frame element must still behave like a bar: δ = PL/(AE).
 TEST(Frame, AxialBehavesLikeBar) {
     const float E = 200e9f, A = 1e-4f, I = 1e-6f, L = 2.0f, P = 1000.0f;

@@ -82,6 +82,14 @@ public:
     void setMomentOfInertia(float i) { momentOfInertia = i; }
     void setDensity(float d)       { density = d; }
 
+    // Member-end moment releases (internal hinges). A released end transmits
+    // force but no bending moment to its node — used to model pinned bases and
+    // internal hinges in the frame solver. Ignored by the pin-jointed truss.
+    bool getStartMomentRelease() const { return startRelease; }
+    bool getEndMomentRelease()   const { return endRelease; }
+    void setStartMomentRelease(bool r) { startRelease = r; }
+    void setEndMomentRelease(bool r)   { endRelease   = r; }
+
     // Apply a material preset — overwrites E and density to the material defaults.
     void setMaterial(BeamMaterial m) {
         material      = m;
@@ -99,4 +107,6 @@ private:
     float momentOfInertia;  // m⁴  (for future frame-element solver)
     float density;          // kg/m³ (for self-weight loads)
     BeamMaterial material;
+    bool  startRelease = false; // internal hinge at the start node
+    bool  endRelease   = false; // internal hinge at the end node
 };

@@ -796,6 +796,34 @@ void UIHandler::renderUI(SDL_Window* window,
             ImGui::TextDisabled("Stiffness: %.2e N/m", static_cast<double>(beam.getStiffness(nodes)));
         else
             ImGui::Text("AE/L: %.3e N/m", static_cast<double>(beam.getStiffness(nodes)));
+
+        // Member-end releases (internal hinges) — frame mode only. A released
+        // end transmits force but no bending moment, turning a rigid connection
+        // into a pin (the internal_hinge vs rigid joint distinction).
+        if (useFrameMode) {
+            ImGui::Spacing();
+            ImGui::TextColored({0.55f,0.85f,1.0f,1.0f},
+                               beginnerMode ? "JOINT CONNECTIONS" : "MEMBER-END RELEASES");
+            ImGui::Separator();
+            bool relStart = beam.getStartMomentRelease();
+            bool relEnd   = beam.getEndMomentRelease();
+            if (ImGui::Checkbox(beginnerMode ? "Hinge at start (pin)" : "Release moment at start",
+                                &relStart)) {
+                pushSnapshot(nodes, beams);
+                beam.setStartMomentRelease(relStart);
+                needsSolveFlag = true;
+            }
+            if (ImGui::Checkbox(beginnerMode ? "Hinge at end (pin)" : "Release moment at end",
+                                &relEnd)) {
+                pushSnapshot(nodes, beams);
+                beam.setEndMomentRelease(relEnd);
+                needsSolveFlag = true;
+            }
+            if (ImGui::IsItemHovered() && beginnerMode)
+                ImGui::SetTooltip("Rigid = the member carries bending moment into the joint.\n"
+                                  "Hinge = a pin that lets the member rotate freely (no moment).");
+        }
+
         ImGui::Spacing();
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f,0.18f,0.18f,1.0f));
         if (ImGui::Button("Delete Beam", ImVec2(-1, 0))) {

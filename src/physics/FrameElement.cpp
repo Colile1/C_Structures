@@ -38,6 +38,26 @@ Mat12 localStiffness(double L, double E, double A,
     return k;
 }
 
+Mat12 condenseReleases(Mat12 k, const Releases& released) {
+    for (int p = 0; p < 12; ++p) {
+        if (!released[p]) continue;
+        const double kpp = k(p, p);
+        if (std::abs(kpp) < 1e-30) {            // no stiffness to condense
+            for (int i = 0; i < 12; ++i) { k(i, p) = 0.0; k(p, i) = 0.0; }
+            continue;
+        }
+        // Snapshot row/col p before the rank-1 update so the elimination reads
+        // consistent (unmutated) values; k is symmetric so col == row.
+        const Vec12 col = k.col(p);
+        const Vec12 row = k.row(p).transpose();
+        for (int i = 0; i < 12; ++i)
+            for (int j = 0; j < 12; ++j)
+                k(i, j) -= col(i) * row(j) / kpp;
+        for (int i = 0; i < 12; ++i) { k(i, p) = 0.0; k(p, i) = 0.0; }
+    }
+    return k;
+}
+
 Mat3 rotation(const glm::vec3& p1, const glm::vec3& p2, double& outLength) {
     glm::vec3 d = p2 - p1;
     double L = glm::length(d);
@@ -60,12 +80,12 @@ Mat3 rotation(const glm::vec3& p1, const glm::vec3& p2, double& outLength) {
 
 Mat12 globalStiffness(const glm::vec3& p1, const glm::vec3& p2,
                       double E, double A, double G, double J,
-                      double Iy, double Iz) {
+                      double Iy, double Iz, const Releases& released) {
     double L = 0.0;
     Mat3 R = rotation(p1, p2, L);
     if (L < 1e-12) return Mat12::Zero();
 
-    Mat12 k = localStiffness(L, E, A, G, J, Iy, Iz);
+    Mat12 k = condenseReleases(localStiffness(L, E, A, G, J, Iy, Iz), released);
     Mat12 T = Mat12::Zero();
     for (int b = 0; b < 4; ++b) T.block<3,3>(3*b, 3*b) = R;
     return T.transpose() * k * T;
@@ -73,14 +93,17 @@ Mat12 globalStiffness(const glm::vec3& p1, const glm::vec3& p2,
 
 Vec12 localEndForces(const glm::vec3& p1, const glm::vec3& p2,
                      double E, double A, double G, double J,
-                     double Iy, double Iz, const Vec12& uGlobalElem) {
+                     double Iy, double Iz, const Vec12& uGlobalElem,
+                     const Releases& released) {
     double L = 0.0;
     Mat3 R = rotation(p1, p2, L);
     if (L < 1e-12) return Vec12::Zero();
 
     Mat12 T = Mat12::Zero();
     for (int b = 0; b < 4; ++b) T.block<3,3>(3*b, 3*b) = R;
-    Mat12 k = localStiffness(L, E, A, G, J, Iy, Iz);
+    // Same condensed stiffness as assembly: released DOFs read ~0 and the
+    // retained end forces already include the released DOF's contribution.
+    Mat12 k = condenseReleases(localStiffness(L, E, A, G, J, Iy, Iz), released);
     return k * (T * uGlobalElem); // local end forces
 }
 
