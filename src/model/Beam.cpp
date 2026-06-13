@@ -9,13 +9,14 @@
 Beam::Beam(int startIdx, int endIdx, BeamMaterial mat, float A, float I)
     : startNode(startIdx), endNode(endIdx),
       youngsModulus(defaultE(mat)), crossSection(A),
-      momentOfInertia(I), material(mat) {}
+      momentOfInertia(I), density(defaultDensity(mat)), material(mat) {}
 
 // Legacy constructor (used by tests and old code).
 Beam::Beam(int startIdx, int endIdx, float E, float A)
     : startNode(startIdx), endNode(endIdx),
       youngsModulus(E), crossSection(A),
-      momentOfInertia(8.33e-9f), material(BeamMaterial::CUSTOM) {}
+      momentOfInertia(8.33e-9f), density(defaultDensity(BeamMaterial::CUSTOM)),
+      material(BeamMaterial::CUSTOM) {}
 
 // getLength
 // Purpose: Euclidean distance between the beam's two endpoint nodes.

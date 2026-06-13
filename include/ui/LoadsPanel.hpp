@@ -8,9 +8,12 @@
 #include "../model/Beam.hpp"
 
 // renderLoadsPanel
-// Purpose: ImGui panel for adding/removing distributed and moment loads.
-//          Only shown when frame mode is active.
-// Returns: true if any load was added or removed (caller should re-solve).
+// Purpose: ImGui panel for adding/removing distributed and moment loads and
+//          toggling member self-weight. Only shown when frame mode is active.
+// Inputs:  loads — user load list (mutated); selfWeight — self-weight toggle
+//          (mutated); frameSim/beams — current model for live updates.
+// Returns: true if any load or the self-weight toggle changed (caller re-solves).
 bool renderLoadsPanel(std::vector<DistributedLoad>& loads,
+                      bool& selfWeight,
                       FrameSimulator& frameSim,
                       const std::vector<Beam>& beams);

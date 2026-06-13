@@ -203,3 +203,20 @@ void applyDistributedLoads(const std::vector<DistributedLoad>& loads,
         }
     }
 }
+
+std::vector<DistributedLoad> selfWeightLoads(const std::vector<Beam>& beams)
+{
+    std::vector<DistributedLoad> out;
+    out.reserve(beams.size());
+    for (int b = 0; b < static_cast<int>(beams.size()); ++b) {
+        const Beam& bm = beams[b];
+        // Weight per unit length, N/m: ρ (kg/m³) · A (m²) · g (m/s²).
+        const float w = static_cast<float>(
+            static_cast<double>(bm.getDensity()) *
+            static_cast<double>(bm.getCrossSection()) * kGravityAccel);
+        // Downward UDL: direction −Y with positive intensity (matches the
+        // gravity-down convention used elsewhere, e.g. DistributedLoad tests).
+        out.push_back({ b, LoadType::UDL, glm::vec3(0.0f, -1.0f, 0.0f), w, 0.0f, 0.0f });
+    }
+    return out;
+}

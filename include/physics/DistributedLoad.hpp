@@ -5,6 +5,11 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "MemberForces.hpp"
+#include "../model/Beam.hpp"
+
+// Standard gravitational acceleration (m/s²) used to turn member mass into a
+// self-weight load: a UDL of ρ·A·g per unit length acting downward (−Y).
+constexpr double kGravityAccel = 9.81;
 
 // physics/DistributedLoad.hpp : consistent equivalent nodal loads (CENL) for
 // distributed and moment loads on 3D frame members. These are added to the
@@ -70,3 +75,10 @@ void applyDistributedLoads(const std::vector<DistributedLoad>& loads,
                            const std::vector<glm::vec3>& positions,
                            const std::vector<std::pair<int,int>>& connectivity,
                            std::vector<double>& F);
+
+// selfWeightLoads
+// Purpose: build the self-weight load for every member: a downward (−Y global)
+//          UDL of intensity ρ·A·g (N/m) using each beam's density and section.
+// Inputs:  beams — the member list (density and cross-section read per beam).
+// Output:  one UDL DistributedLoad per beam, indexed by its position in `beams`.
+std::vector<DistributedLoad> selfWeightLoads(const std::vector<Beam>& beams);

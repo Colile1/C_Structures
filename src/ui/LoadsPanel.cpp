@@ -5,6 +5,7 @@
 #include <cstdio>
 
 bool renderLoadsPanel(std::vector<DistributedLoad>& loads,
+                      bool& selfWeight,
                       FrameSimulator& frameSim,
                       const std::vector<Beam>& beams)
 {
@@ -17,6 +18,15 @@ bool renderLoadsPanel(std::vector<DistributedLoad>& loads,
     ImGui::TextWrapped("Applied in frame mode. Each load is resolved into "
                        "consistent equivalent nodal loads.");
     ImGui::Spacing();
+
+    // ── Self-weight ───────────────────────────────────────────────────────────
+    if (ImGui::Checkbox("Include self-weight (rho.A.g)", &selfWeight)) {
+        frameSim.setSelfWeight(selfWeight);
+        changed = true;
+    }
+    ImGui::TextWrapped("Adds each member's own weight as a downward UDL.");
+    ImGui::Spacing();
+    ImGui::Separator();
 
     // ── Add new load ─────────────────────────────────────────────────────────
     static int    s_beamIdx   = 0;

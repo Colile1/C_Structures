@@ -25,6 +25,15 @@ bool FrameSimulator::isDofConstrained(const Node& nd, int dof) const {
     return nd.getJointType() == JointType::FIXED;
 }
 
+std::vector<DistributedLoad> FrameSimulator::effectiveLoads() const {
+    std::vector<DistributedLoad> loads = m_distLoads;
+    if (m_selfWeight) {
+        std::vector<DistributedLoad> sw = selfWeightLoads(*m_beams);
+        loads.insert(loads.end(), sw.begin(), sw.end());
+    }
+    return loads;
+}
+
 void FrameSimulator::populateForces() {
     m_F.setZero();
     const int nNodes = static_cast<int>(m_nodes->size());
@@ -40,8 +49,9 @@ void FrameSimulator::populateForces() {
         m_F[DPN*i + 5] = static_cast<double>(m.z);
     }
 
-    // Consistent equivalent nodal loads from distributed/moment loads.
-    if (!m_distLoads.empty()) {
+    // Consistent equivalent nodal loads from distributed/moment/self-weight loads.
+    std::vector<DistributedLoad> loads = effectiveLoads();
+    if (!loads.empty()) {
         const int nBeams = static_cast<int>(m_beams->size());
         std::vector<double> Fvec(DPN * nNodes, 0.0);
         std::vector<glm::vec3> pos(nNodes);
@@ -49,7 +59,7 @@ void FrameSimulator::populateForces() {
         std::vector<std::pair<int,int>> conn(nBeams);
         for (int i = 0; i < nBeams; ++i)
             conn[i] = { (*m_beams)[i].getStartIdx(), (*m_beams)[i].getEndIdx() };
-        applyDistributedLoads(m_distLoads, pos, conn, Fvec);
+        applyDistributedLoads(loads, pos, conn, Fvec);
         for (int i = 0; i < DPN * nNodes; ++i) m_F[i] += Fvec[i];
     }
 }
@@ -224,7 +234,7 @@ std::array<float, 12> FrameSimulator::getMemberEndForces(const Beam& beam) const
         const glm::vec3 pi = (*m_nodes)[i].getPosition();
         const glm::vec3 pj = (*m_nodes)[j].getPosition();
         const float L = glm::length(pj - pi);
-        for (const auto& dl : m_distLoads) {
+        for (const auto& dl : effectiveLoads()) {
             if (dl.beamIdx != bi) continue;
             auto cenl = consistentNodalLoadsLocal(dl, pi, pj, L);
             for (int k = 0; k < 12; ++k) p[k] -= cenl[k];
@@ -252,7 +262,7 @@ SpanLoad FrameSimulator::getMemberSpanLoad(const Beam& beam) const {
     const glm::vec3 pi = (*m_nodes)[i].getPosition();
     const glm::vec3 pj = (*m_nodes)[j].getPosition();
     const float L = glm::length(pj - pi);
-    for (const auto& dl : m_distLoads) {
+    for (const auto& dl : effectiveLoads()) {
         if (dl.beamIdx != bi) continue;
         SpanLoad s = spanLoadLocal(dl, pi, pj, L);
         out.qy0 += s.qy0; out.qyL += s.qyL;
@@ -267,6 +277,23 @@ bool FrameSimulator::checkForceEquilibrium(glm::vec3& netResidual, float tol) co
     for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i) {
         netResidual += (*m_nodes)[i].getAppliedForce();
         netResidual += getNodeReactionForce(i);
+    }
+    // Distributed and self-weight loads also act on the structure: add each
+    // load's global force resultant (the translational part of its CENL) so the
+    // check balances them against the reactions, not just the nodal point loads.
+    const int nNodes = static_cast<int>(m_nodes->size());
+    for (const auto& dl : effectiveLoads()) {
+        if (dl.beamIdx < 0 || dl.beamIdx >= static_cast<int>(m_beams->size())) continue;
+        const Beam& bm = (*m_beams)[dl.beamIdx];
+        const int si = bm.getStartIdx(), ei = bm.getEndIdx();
+        if (si < 0 || ei < 0 || si >= nNodes || ei >= nNodes) continue;
+        const glm::vec3 pi = (*m_nodes)[si].getPosition();
+        const glm::vec3 pj = (*m_nodes)[ei].getPosition();
+        const float L = glm::length(pj - pi);
+        auto cenl = consistentNodalLoads(dl, pi, pj, L);
+        netResidual.x += static_cast<float>(cenl[0] + cenl[6]);
+        netResidual.y += static_cast<float>(cenl[1] + cenl[7]);
+        netResidual.z += static_cast<float>(cenl[2] + cenl[8]);
     }
     return std::abs(netResidual.x) <= tol
         && std::abs(netResidual.y) <= tol

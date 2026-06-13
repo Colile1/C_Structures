@@ -108,3 +108,54 @@ TEST(DistributedLoad, CantileverUDL_TipDeflection) {
         << "Cantilever tip deflection under UDL should match -wL^4/(8EI)";
     EXPECT_LT(tipDy, 0.0f) << "Tip must deflect downward";
 }
+
+TEST(DistributedLoad, SelfWeight_LoadIntensityFromDensity) {
+    // selfWeightLoads turns each member's mass into a downward UDL of ρ·A·g (N/m).
+    const float A = 0.02f;
+    std::vector<Beam> beams;
+    beams.emplace_back(0, 1, BeamMaterial::STEEL, A); // density = 7850 kg/m³
+
+    auto sw = selfWeightLoads(beams);
+    ASSERT_EQ(sw.size(), 1u);
+    EXPECT_EQ(sw[0].beamIdx, 0);
+    EXPECT_EQ(sw[0].type, LoadType::UDL);
+    // Direction is downward (−Y) with a positive intensity.
+    EXPECT_NEAR(sw[0].direction.y, -1.0f, 1e-6f);
+    const float expectedW = 7850.0f * A * static_cast<float>(kGravityAccel);
+    EXPECT_NEAR(sw[0].w, expectedW, expectedW * 1e-4f) << "w = ρ·A·g";
+}
+
+TEST(DistributedLoad, SelfWeight_CantileverVerticalReaction) {
+    // Horizontal cantilever (FIXED at left, free at right), 4 elements of 1 m.
+    // With self-weight enabled the total vertical reaction must equal the
+    // member's total weight ρ·A·g·L, and force equilibrium must close.
+    const float A = 0.02f, I = 8.33e-6f;
+    const float Lm = 4.0f;
+    const int   NE = 4;
+    const float Le = Lm / NE;
+    const float rho = 7850.0f; // steel
+
+    std::vector<Node> nodes;
+    nodes.emplace_back(0.0f, 0.0f, 0.0f); nodes.back().setJointType(JointType::FIXED);
+    for (int k = 1; k <= NE; ++k)
+        nodes.emplace_back(k * Le, 0.0f, 0.0f);
+
+    std::vector<Beam> beams;
+    for (int k = 0; k < NE; ++k) {
+        beams.emplace_back(k, k + 1, BeamMaterial::STEEL, A);
+        beams.back().setMomentOfInertia(I);
+    }
+
+    FrameSimulator fs(nodes, beams);
+    fs.setSelfWeight(true);
+    fs.solve();
+
+    const float totalWeight = rho * A * static_cast<float>(kGravityAccel) * Lm;
+    float reactionY = fs.getNodeReactionForce(0).y; // only the fixed node reacts
+    EXPECT_NEAR(reactionY, totalWeight, totalWeight * 0.01f)
+        << "Vertical reaction must carry the full self-weight ρ·A·g·L";
+
+    glm::vec3 residual;
+    EXPECT_TRUE(fs.checkForceEquilibrium(residual, totalWeight * 1e-3f))
+        << "Self-weight must be balanced by reactions (equilibrium green)";
+}

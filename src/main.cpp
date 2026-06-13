@@ -428,6 +428,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
     SolveResult   lastSolveResult = physics.solveStaticForces();
     FrameSimulator frameSim(nodes, beams);
     std::vector<DistributedLoad> distLoads; // user-defined distributed/moment loads
+    bool selfWeight = false;                // include each member's ρ·A·g self-weight
     // Frame solve deferred until the user enables frame mode.
 
     ForceRenderer forceRenderer;
@@ -474,7 +475,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 if (e.key.keysym.sym == SDLK_RETURN) {
                     physics = Simulator(nodes, beams);
                     lastSolveResult = physics.solveStaticForces();
-                    if (ui.getUseFrameMode()) { frameSim = FrameSimulator(nodes, beams); lastSolveResult = frameSim.solve(); }
+                    if (ui.getUseFrameMode()) { frameSim = FrameSimulator(nodes, beams); frameSim.setDistributedLoads(distLoads); frameSim.setSelfWeight(selfWeight); lastSolveResult = frameSim.solve(); }
                 }
                 // Undo/redo are handled by UIHandler; mirror Escape→clear tool
                 (void)ctrl; (void)shift;
@@ -487,6 +488,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
             if (ui.getUseFrameMode()) {
                 frameSim = FrameSimulator(nodes, beams);
                 frameSim.setDistributedLoads(distLoads);
+                frameSim.setSelfWeight(selfWeight);
                 lastSolveResult = frameSim.solve();
             }
         }
@@ -571,9 +573,10 @@ int main(int /*argc*/, char* /*argv*/[]) {
         renderReactionsPanel(nodes, physics);
         renderModelCheckPanel(nodes, beams, frameOn, &lastSolveResult);
         if (frameOn) {
-            if (renderLoadsPanel(distLoads, frameSim, beams)) {
+            if (renderLoadsPanel(distLoads, selfWeight, frameSim, beams)) {
                 frameSim = FrameSimulator(nodes, beams);
                 frameSim.setDistributedLoads(distLoads);
+                frameSim.setSelfWeight(selfWeight);
                 lastSolveResult = frameSim.solve();
             }
         }
@@ -592,7 +595,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 ui.pushSnapshot(nodes, beams);
                 CSVHandler::loadStructure(path, nodes, beams);
                 physics = Simulator(nodes, beams); lastSolveResult = physics.solveStaticForces();
-                if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); lastSolveResult = frameSim.solve(); }
+                if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); frameSim.setSelfWeight(selfWeight); lastSolveResult = frameSim.solve(); }
                 // Focus camera on the loaded structure.
                 if (!nodes.empty()) {
                     glm::vec3 mn=nodes[0].getPosition(), mx=mn;
@@ -609,7 +612,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 loadTemplate(tpl, nodes, beams);
                 distLoads.clear();
                 physics = Simulator(nodes, beams); lastSolveResult = physics.solveStaticForces();
-                if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); lastSolveResult = frameSim.solve(); }
+                if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); frameSim.setSelfWeight(selfWeight); lastSolveResult = frameSim.solve(); }
                 // Reset camera to frame all template nodes.
                 if (!nodes.empty()) {
                     glm::vec3 mn=nodes[0].getPosition(), mx=mn;

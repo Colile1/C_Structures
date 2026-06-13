@@ -35,6 +35,17 @@ inline float defaultE(BeamMaterial m) {
     }
 }
 
+// Default mass densities (kg/m³), used for self-weight loads (ρ·A·g per length).
+inline float defaultDensity(BeamMaterial m) {
+    switch (m) {
+        case BeamMaterial::STEEL:    return 7850.0f;
+        case BeamMaterial::ALUMINUM: return 2700.0f;
+        case BeamMaterial::CONCRETE: return 2400.0f;
+        case BeamMaterial::TIMBER:   return  500.0f; // softwood
+        default:                     return 7850.0f; // custom defaults to steel
+    }
+}
+
 // A Beam connects two nodes referenced by their indices into the model's
 // node vector. Indices (not pointers) are stored so that growing or
 // reallocating the node vector can never dangle a beam's endpoints, and so
@@ -63,17 +74,21 @@ public:
     float getYoungsModulus() const { return youngsModulus; }
     float getCrossSection()  const { return crossSection; }
     float getMomentOfInertia() const { return momentOfInertia; }
+    float getDensity()       const { return density; }
     BeamMaterial getMaterial() const { return material; }
 
     void setYoungsModulus(float e) { youngsModulus = e; material = BeamMaterial::CUSTOM; }
     void setCrossSection(float a)  { crossSection  = a; }
     void setMomentOfInertia(float i) { momentOfInertia = i; }
+    void setDensity(float d)       { density = d; }
 
-    // Apply a material preset — overwrites E to the material default.
+    // Apply a material preset — overwrites E and density to the material defaults.
     void setMaterial(BeamMaterial m) {
         material      = m;
-        if (m != BeamMaterial::CUSTOM)
+        if (m != BeamMaterial::CUSTOM) {
             youngsModulus = defaultE(m);
+            density       = defaultDensity(m);
+        }
     }
 
 private:
@@ -82,5 +97,6 @@ private:
     float youngsModulus;    // Pa
     float crossSection;     // m²
     float momentOfInertia;  // m⁴  (for future frame-element solver)
+    float density;          // kg/m³ (for self-weight loads)
     BeamMaterial material;
 };

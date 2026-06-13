@@ -47,6 +47,10 @@ public:
     void setDistributedLoads(const std::vector<DistributedLoad>& loads) { m_distLoads = loads; }
     const std::vector<DistributedLoad>& getDistributedLoads() const { return m_distLoads; }
 
+    // Self-weight: when enabled, each member also carries a ρ·A·g downward UDL.
+    void setSelfWeight(bool on) { m_selfWeight = on; }
+    bool getSelfWeight() const  { return m_selfWeight; }
+
 private:
     static constexpr int DPN = 6; // DOF per node
 
@@ -55,9 +59,14 @@ private:
     bool isDofConstrained(const Node& nd, int dof) const; // dof 0..5
     int  beamIndex(const Beam& beam) const;               // index of beam in m_beams, or -1
 
+    // User loads plus, when self-weight is on, the per-member self-weight UDLs.
+    // This is the single load list the solver and diagram recovery both read.
+    std::vector<DistributedLoad> effectiveLoads() const;
+
     std::vector<Node>* m_nodes;
     std::vector<Beam>* m_beams;
     std::vector<DistributedLoad> m_distLoads;
+    bool m_selfWeight = false;
     Eigen::SparseMatrix<double> m_K;
     Eigen::VectorXd m_F;
     Eigen::VectorXd m_u;
