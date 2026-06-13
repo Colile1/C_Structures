@@ -64,7 +64,6 @@ if(BUILD_APP)
         src/ui/GlassBoxPanel.cpp
         src/ui/Templates.cpp
         src/visualization/ForceRenderer.cpp
-        src/visualization/RendererUtils.cpp
         src/graphics/Camera.cpp
     )
 
