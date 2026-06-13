@@ -24,6 +24,7 @@
 #include "../include/ui/ModelCheckPanel.hpp"
 #include "../include/ui/LoadsPanel.hpp"
 #include "../include/ui/ResultsPanel.hpp"
+#include "../include/ui/DiagramPanel.hpp"
 #include "../include/ui/GlassBoxPanel.hpp"
 #include "../include/ui/Templates.hpp"
 #include "../include/data/CSVHandler.hpp"
@@ -579,6 +580,8 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 frameSim.setSelfWeight(selfWeight);
                 lastSolveResult = frameSim.solve();
             }
+            if (ui.getShowDiagram())
+                renderDiagramPanel(nodes, beams, frameSim, ui.getDiagramType());
         }
 
         // ── New panels ─────────────────────────────────────────────────────────

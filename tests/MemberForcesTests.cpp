@@ -155,3 +155,27 @@ TEST(MemberForces, FixedFixedCentralMoment) {
     EXPECT_NEAR(std::abs(end.Mz),    M/4.0, M * 0.05);
     EXPECT_NEAR(left.Vy, right.Vy, std::abs(left.Vy)*0.02 + 1.0); // shear continuous
 }
+
+// diagramStats reduces a sampled diagram to its end values and signed peak with
+// location — what the on-screen annotation reports. For the simply-supported UDL
+// beam the Mz peak is wL²/8 at mid-span and both ends read ~0.
+TEST(MemberForces, DiagramStatsPeakAndEnds) {
+    const float  L = 4.0f;
+    const double w = -1000.0;                          // local-y intensity (downward)
+    std::array<float, 12> p{};
+    p[1] = static_cast<float>(-w * L / 2.0);           // true SS end shear
+    SpanLoad sl; sl.qy0 = sl.qyL = w;
+
+    auto pts = sampleMember(p, L, 17, sl);             // odd count → a station at mid-span
+    DiagramStats s = diagramStats(pts, DiagramComponent::Mz, L);
+
+    EXPECT_NEAR(std::abs(s.peakVal), std::abs(w) * L * L / 8.0, 5.0); // wL²/8
+    EXPECT_NEAR(s.peakX,             L * 0.5f,                  1e-3f); // at mid-span
+    EXPECT_NEAR(s.startVal,          0.0f,                      1.0f);  // pinned end
+    EXPECT_NEAR(s.endVal,            0.0f,                      1.0f);
+
+    // The axial component is identically zero here → flat peak at the start.
+    DiagramStats axial = diagramStats(pts, DiagramComponent::N, L);
+    EXPECT_NEAR(axial.peakVal, 0.0f, 1e-1f);
+    EXPECT_NEAR(axial.peakX,   0.0f, 1e-6f);
+}

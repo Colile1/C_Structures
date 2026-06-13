@@ -2,6 +2,7 @@
 // Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 // physics/MemberForces.cpp : internal-force diagram sampling for frame members.
 #include "physics/MemberForces.hpp"
+#include <cmath>
 
 InternalForces memberInternalAt(const std::array<float, 12>& p, float L, float x,
                                 const SpanLoad& load) {
@@ -55,4 +56,36 @@ std::vector<InternalForces> sampleMember(const std::array<float, 12>& p,
         out.push_back(memberInternalAt(p, L, x, load));
     }
     return out;
+}
+
+// Read one component out of an InternalForces sample.
+static float component(const InternalForces& f, DiagramComponent c) {
+    switch (c) {
+        case DiagramComponent::N:  return f.N;
+        case DiagramComponent::Vy: return f.Vy;
+        case DiagramComponent::Vz: return f.Vz;
+        case DiagramComponent::T:  return f.T;
+        case DiagramComponent::My: return f.My;
+        case DiagramComponent::Mz: return f.Mz;
+    }
+    return 0.0f;
+}
+
+DiagramStats diagramStats(const std::vector<InternalForces>& samples,
+                          DiagramComponent comp, float L) {
+    DiagramStats s;
+    if (samples.empty()) return s;
+    s.startVal = component(samples.front(), comp);
+    s.endVal   = component(samples.back(), comp);
+    s.peakVal  = s.startVal;
+    s.peakX    = 0.0f;
+    const int n = static_cast<int>(samples.size());
+    for (int i = 0; i < n; ++i) {
+        float v = component(samples[i], comp);
+        if (std::abs(v) > std::abs(s.peakVal)) {
+            s.peakVal = v;
+            s.peakX   = (n > 1) ? (L * i) / (n - 1) : 0.0f;
+        }
+    }
+    return s;
 }

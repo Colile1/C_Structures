@@ -54,3 +54,26 @@ InternalForces memberInternalAt(const std::array<float, 12>& p, float L, float x
 std::vector<InternalForces> sampleMember(const std::array<float, 12>& p,
                                          float L, int samples,
                                          const SpanLoad& load = {});
+
+// Selects which internal-force component a diagram displays. The integer values
+// match the UI quantity-switch order (0=N … 5=Mz).
+enum class DiagramComponent { N = 0, Vy, Vz, T, My, Mz };
+
+// Summary of one member's diagram for a single component: the values at each end
+// and the signed extreme (largest magnitude) with its location — what an
+// on-screen annotation needs to label the diagram.
+struct DiagramStats {
+    float startVal = 0.0f;  // component value at x = 0
+    float endVal   = 0.0f;  // component value at x = L
+    float peakVal  = 0.0f;  // signed value of the largest magnitude along the member
+    float peakX    = 0.0f;  // distance from the start node to that peak (m)
+};
+
+// diagramStats
+// Purpose: reduce a sampled diagram to its end values and signed peak+location
+//          for annotating the selected quantity on screen.
+// Inputs:  samples — stations along the member (x=0..L, evenly spaced);
+//          comp — component to read; L — member length.
+// Output:  DiagramStats; peakX is reported at the resolution of the sampling.
+DiagramStats diagramStats(const std::vector<InternalForces>& samples,
+                          DiagramComponent comp, float L);

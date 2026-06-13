@@ -61,6 +61,7 @@ if(BUILD_APP)
         src/ui/ModelCheckPanel.cpp
         src/ui/LoadsPanel.cpp
         src/ui/ResultsPanel.cpp
+        src/ui/DiagramPanel.cpp
         src/ui/GlassBoxPanel.cpp
         src/ui/Templates.cpp
         src/visualization/ForceRenderer.cpp
