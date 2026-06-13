@@ -11,6 +11,18 @@ find_package(Eigen3 REQUIRED)
 find_package(glm REQUIRED)
 find_package(GTest REQUIRED)
 
+# ── nlohmann/json (header-only, needed by JSONHandler in both app and tests) ──
+include(FetchContent)
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+    GIT_SHALLOW    TRUE
+)
+set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
+set(JSON_Install    OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # ── Graphics application dependencies (skipped when BUILD_APP=OFF) ────────────
 if(BUILD_APP)
     find_package(SDL2 REQUIRED)
@@ -18,7 +30,6 @@ if(BUILD_APP)
     find_package(GLEW REQUIRED)
 
     # ── Dear ImGui (fetched at configure time) ─────────────────────────────────
-    include(FetchContent)
     FetchContent_Declare(
         imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui.git
@@ -50,6 +61,7 @@ if(BUILD_APP)
         src/model/Node.cpp
         src/model/Beam.cpp
         src/data/CSVHandler.cpp
+        src/data/JSONHandler.cpp
         src/physics/Simulator.cpp
         src/physics/Determinacy.cpp
         src/physics/FrameElement.cpp
@@ -87,6 +99,7 @@ if(BUILD_APP)
         GLEW::GLEW
         Eigen3::Eigen
         imgui_lib
+        nlohmann_json::nlohmann_json
     )
 endif()
 
@@ -98,6 +111,7 @@ add_executable(tests
     tests/ModelTests.cpp
     tests/PhysicsTests.cpp
     tests/CSVHandlerTests.cpp
+    tests/JSONHandlerTests.cpp
     tests/IntegrationTests.cpp
     tests/DeterminacyTests.cpp
     tests/FrameTests.cpp
@@ -114,6 +128,7 @@ add_executable(tests
     src/physics/MemberForces.cpp
     src/physics/DistributedLoad.cpp
     src/data/CSVHandler.cpp
+    src/data/JSONHandler.cpp
 )
 
 target_include_directories(tests PRIVATE
@@ -132,9 +147,11 @@ add_test(NAME MemberForcesTests     COMMAND tests --gtest_filter=MemberForces*)
 add_test(NAME DistributedLoadTests COMMAND tests --gtest_filter=DistributedLoad*)
 add_test(NAME SolverStatusTests    COMMAND tests --gtest_filter=SolverStatus*)
 add_test(NAME ResolveCacheTests    COMMAND tests --gtest_filter=ResolveCache*)
+add_test(NAME JSONHandlerTests     COMMAND tests --gtest_filter=JSONHandler*)
 
 target_link_libraries(tests PRIVATE
     GTest::GTest
     GTest::Main
     Eigen3::Eigen
+    nlohmann_json::nlohmann_json
 )

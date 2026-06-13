@@ -28,6 +28,7 @@
 #include "../include/ui/GlassBoxPanel.hpp"
 #include "../include/ui/Templates.hpp"
 #include "../include/data/CSVHandler.hpp"
+#include "../include/data/JSONHandler.hpp"
 #include "../include/visualization/ForceRenderer.hpp"
 #include "../include/ui/UIHandler.hpp"
 #include "../include/graphics/Shader.hpp"
@@ -591,9 +592,27 @@ int main(int /*argc*/, char* /*argv*/[]) {
         // ── Pending requests from UIHandler ────────────────────────────────────
         {
             std::string path;
+            auto isJson = [](const std::string& p) {
+                return p.size() >= 5 &&
+                       p.compare(p.size() - 5, 5, ".json") == 0;
+            };
             if (ui.consumeLoadRequest(path)) {
                 ui.pushSnapshot(nodes, beams);
-                CSVHandler::loadStructure(path, nodes, beams);
+                if (isJson(path)) {
+                    ViewPrefs prefs;
+                    if (JSONHandler::loadProject(path, nodes, beams, distLoads, prefs)) {
+                        ui.setUseFrameMode(prefs.useFrameMode);
+                        ui.setShowDiagram(prefs.showDiagram);
+                        ui.setDiagramType(prefs.diagramType);
+                        ui.setBeginnerMode(prefs.beginnerMode);
+                        ui.setShowForceLabels(prefs.showForceLabels);
+                        ui.setShowGlassBox(prefs.showGlassBox);
+                        ui.setShowPalette(prefs.showPalette);
+                        selfWeight = prefs.selfWeight;
+                    }
+                } else {
+                    CSVHandler::loadStructure(path, nodes, beams);
+                }
                 resolve();
                 // Focus camera on the loaded structure.
                 if (!nodes.empty()) {
@@ -603,7 +622,20 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 }
             }
             if (ui.consumeSaveRequest(path)) {
-                CSVHandler::saveStructure(path, nodes, beams);
+                if (isJson(path)) {
+                    ViewPrefs prefs;
+                    prefs.useFrameMode    = ui.getUseFrameMode();
+                    prefs.showDiagram     = ui.getShowDiagram();
+                    prefs.diagramType     = ui.getDiagramType();
+                    prefs.beginnerMode    = ui.getBeginnerMode();
+                    prefs.showForceLabels = ui.getShowForceLabels();
+                    prefs.showGlassBox    = ui.getShowGlassBox();
+                    prefs.showPalette     = ui.getShowPalette();
+                    prefs.selfWeight      = selfWeight;
+                    JSONHandler::saveProject(path, nodes, beams, distLoads, prefs);
+                } else {
+                    CSVHandler::saveStructure(path, nodes, beams);
+                }
             }
             int tpl = ui.consumeTemplateRequest();
             if (tpl >= 0) {

@@ -56,6 +56,17 @@ public:
     int       getDiagramType()     const { return diagramType; }
     bool      getBeginnerMode()    const { return beginnerMode; }
     bool      getShowGlassBox()    const { return showGlassBox; }
+    bool      getShowPalette()     const { return showPalette; }
+
+    // Setters used when restoring a JSON project's saved view preferences.
+    void setUseFrameMode(bool v)    { useFrameMode    = v; }
+    void setShowDiagram(bool v)     { showDiagram     = v; }
+    void setDiagramType(int v)      { diagramType     = v; }
+    void setBeginnerMode(bool v)    { beginnerMode    = v; }
+    void setShowForceLabels(bool v) { showForceLabels = v; }
+    void setShowGlassBox(bool v)    { showGlassBox    = v; }
+    void setShowPalette(bool v)     { showPalette     = v; }
+
     // Pending file-operation paths (consumed by main.cpp each frame).
     bool      consumeLoadRequest(std::string& path) {
         if (!m_pendingLoad.empty()) { path = m_pendingLoad; m_pendingLoad.clear(); return true; }
