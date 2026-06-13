@@ -570,8 +570,8 @@ int main(int /*argc*/, char* /*argv*/[]) {
         ImGui::NewFrame();
 
         ui.renderUI(window, nodes, beams, dispMult, autoDispScale);
-        if (frameOn) renderReactionsPanel(nodes, frameSim);
-        else         renderReactionsPanel(nodes, physics);
+        if (frameOn) renderReactionsPanel(nodes, frameSim, ui.getBeginnerMode());
+        else         renderReactionsPanel(nodes, physics,  ui.getBeginnerMode());
         renderModelCheckPanel(nodes, beams, frameOn, &lastSolveResult);
         if (frameOn) {
             if (renderLoadsPanel(distLoads, selfWeight, frameSim, beams))

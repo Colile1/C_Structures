@@ -11,5 +11,8 @@ class FrameSimulator;
 // global equilibrium self-check. Display-only; reads results from the solver.
 // Truss overload lists reaction forces (Rx,Ry,Rz); the frame overload also lists
 // reaction moments (Mx,My,Mz), the extra DOFs the 6-DOF solver carries.
-void renderReactionsPanel(const std::vector<Node>& nodes, const Simulator& sim);
-void renderReactionsPanel(const std::vector<Node>& nodes, const FrameSimulator& sim);
+// beginnerMode=true adds a plain-English sentence summary below the table.
+void renderReactionsPanel(const std::vector<Node>& nodes, const Simulator& sim,
+                          bool beginnerMode = false);
+void renderReactionsPanel(const std::vector<Node>& nodes, const FrameSimulator& sim,
+                          bool beginnerMode = false);

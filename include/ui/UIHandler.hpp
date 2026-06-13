@@ -110,8 +110,9 @@ private:
     int         m_templateIdx   = -1;  // 0=SimpleBeam 1=Triangle 2=Portal 3=Cantilever
     // File-dialog state
     char        m_pathBuf[512]  = {};
-    bool        m_showOpenDlg   = false;
-    bool        m_showSaveDlg   = false;
+    bool        m_showOpenDlg      = false;
+    bool        m_showSaveDlg      = false;
+    bool        m_showTemplatesDlg = false;
 
     glm::vec3 forceVector = {0.0f, -1000.0f, 0.0f};
     float forceMagX =  0.0f;

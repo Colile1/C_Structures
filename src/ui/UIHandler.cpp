@@ -527,6 +527,10 @@ void UIHandler::renderUI(SDL_Window* window,
             ImGui::Separator();
             if (ImGui::MenuItem(ICON_FA_CAMERA "  Export Screenshot", "F12")) m_wantScreenshot = true;
             ImGui::Separator();
+            if (ImGui::MenuItem(ICON_FA_TABLE "  Example Structures..."))
+                m_showTemplatesDlg = true;
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Browse pre-built example structures as one-click cards.");
             if (ImGui::BeginMenu(ICON_FA_TABLE "  Load Template")) {
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Pre-built example structures — great starting points.");
@@ -703,10 +707,14 @@ void UIHandler::renderUI(SDL_Window* window,
         if (noUndo) ImGui::BeginDisabled();
         if (ImGui::Button(ICON_FA_ROTATE_LEFT "  Undo", ImVec2(57,0))) undo(nodes, beams);
         if (noUndo) ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            ImGui::SetTooltip("Undo the last change  [Ctrl+Z]");
         ImGui::SameLine();
         if (noRedo) ImGui::BeginDisabled();
         if (ImGui::Button(ICON_FA_ROTATE_RIGHT "  Redo", ImVec2(57,0))) redo(nodes, beams);
         if (noRedo) ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+            ImGui::SetTooltip("Redo the last undone change  [Ctrl+Y]");
     }
     ImGui::Spacing();
     ImGui::TextColored({0.6f,0.6f,0.6f,1.0f}, "Camera:");
@@ -734,10 +742,16 @@ void UIHandler::renderUI(SDL_Window* window,
     ImGui::Separator();
     ImGui::SliderFloat("Disp. mult.", &dispMult, 0.1f, 20.0f, "%.2f\xc3\x97",
                        ImGuiSliderFlags_Logarithmic);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Scale the deformed shape overlay.\n"
+                          "Auto-scale already fits the shape to the view;\n"
+                          "this slider multiplies that further.");
     char scaleLabel[48];
     std::snprintf(scaleLabel, sizeof scaleLabel, "\xc3\x97%.0f (auto)", autoDispScale * dispMult);
     ImGui::TextDisabled("%s", scaleLabel);
     ImGui::Checkbox("Show member forces", &showForceLabels);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Draw the axial force value next to each member in the 3D view.");
 
     // ── Analysis mode ─────────────────────────────────────────────────────────
     ImGui::Spacing();
@@ -746,15 +760,21 @@ void UIHandler::renderUI(SDL_Window* window,
     if (ImGui::Checkbox("Frame mode (6-DOF)", &useFrameMode))
         needsSolveFlag = true;
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Off = pin-jointed truss\nOn  = rigid-jointed frame (bending/shear/moment)");
+        ImGui::SetTooltip("Off = pin-jointed truss (axial forces only)\n"
+                          "On  = rigid-jointed frame (axial + shear + bending + torsion)");
     if (useFrameMode) {
         ImGui::Checkbox("Show diagram", &showDiagram);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Overlay the selected internal-force diagram on each member.");
         if (showDiagram) {
             static const char* dnames[] = {
                 "Axial  N", "Shear Vy", "Shear Vz",
                 "Torsion T", "Moment My", "Moment Mz"
             };
             ImGui::Combo("Diagram", &diagramType, dnames, 6);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Choose which internal force to display:\n"
+                                  "N = axial  Vy/Vz = shear  T = torsion  My/Mz = bending moment");
         }
     }
 
@@ -802,8 +822,11 @@ void UIHandler::renderUI(SDL_Window* window,
         float px = pos.x, py = pos.y, pz = pos.z;
         bool posChg = false;
         posChg |= ImGui::DragFloat("X (m)##p", &px, 0.05f, -100.f, 100.f, "%.3f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Horizontal position (drag or double-click to type).");
         posChg |= ImGui::DragFloat("Y (m)##p", &py, 0.05f, -100.f, 100.f, "%.3f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Vertical position (drag or double-click to type).");
         posChg |= ImGui::DragFloat("Z (m)##p", &pz, 0.05f, -100.f, 100.f, "%.3f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Depth position (drag or double-click to type).");
         if (posChg) {
             pushSnapshot(nodes, beams);
             node.setPosition({px, py, pz});
@@ -840,8 +863,17 @@ void UIHandler::renderUI(SDL_Window* window,
         float fx = f.x, fy = f.y, fz = f.z;
         bool fChg = false;
         fChg |= ImGui::DragFloat("Fx (N)", &fx, 10.0f, -1e6f, 1e6f, "%.0f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(beginnerMode
+            ? "Horizontal push/pull on this joint (positive = rightward)."
+            : "Nodal force in the global X direction (N).");
         fChg |= ImGui::DragFloat("Fy (N)", &fy, 10.0f, -1e6f, 1e6f, "%.0f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(beginnerMode
+            ? "Vertical push/pull on this joint (positive = upward).\nTip: gravity loads are negative."
+            : "Nodal force in the global Y direction (N).");
         fChg |= ImGui::DragFloat("Fz (N)", &fz, 10.0f, -1e6f, 1e6f, "%.0f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(beginnerMode
+            ? "In/out-of-plane push on this joint (positive = toward you)."
+            : "Nodal force in the global Z direction (N).");
         if (fChg) {
             pushSnapshot(nodes, beams);
             node.clearForce();
@@ -861,8 +893,17 @@ void UIHandler::renderUI(SDL_Window* window,
         float mx = mo.x, my = mo.y, mz = mo.z;
         bool mChg = false;
         mChg |= ImGui::DragFloat("Mx (N\xc2\xb7m)", &mx, 10.0f, -1e6f, 1e6f, "%.0f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(beginnerMode
+            ? "Concentrated moment twisting about the horizontal axis.\nOnly active in frame mode."
+            : "Concentrated nodal moment about the global X axis (N\xc2\xb7m). Frame mode only.");
         mChg |= ImGui::DragFloat("My (N\xc2\xb7m)", &my, 10.0f, -1e6f, 1e6f, "%.0f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(beginnerMode
+            ? "Concentrated moment twisting about the vertical axis.\nOnly active in frame mode."
+            : "Concentrated nodal moment about the global Y axis (N\xc2\xb7m). Frame mode only.");
         mChg |= ImGui::DragFloat("Mz (N\xc2\xb7m)", &mz, 10.0f, -1e6f, 1e6f, "%.0f");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(beginnerMode
+            ? "Concentrated moment twisting in the XY-plane (most common).\nOnly active in frame mode."
+            : "Concentrated nodal moment about the global Z axis (N\xc2\xb7m). Frame mode only.");
         if (mChg) {
             pushSnapshot(nodes, beams);
             node.clearMoment();
@@ -929,17 +970,26 @@ void UIHandler::renderUI(SDL_Window* window,
                 beam.setYoungsModulus(Egpa * 1e9f);
                 needsSolveFlag = true;
             }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Young's modulus — material stiffness (GPa).\n"
+                                  "Steel \xe2\x89\x88 200, Aluminium \xe2\x89\x88 70, Concrete \xe2\x89\x88 30, Timber \xe2\x89\x88 12.");
             float Acm2 = beam.getCrossSection() * 1e4f;
             if (ImGui::DragFloat("A (cm\xc2\xb2)", &Acm2, 0.1f, 0.001f, 1000.0f, "%.4f")) {
                 pushSnapshot(nodes, beams);
                 beam.setCrossSection(Acm2 * 1e-4f);
                 needsSolveFlag = true;
             }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Cross-sectional area (cm\xc2\xb2).\n"
+                                  "Governs axial stiffness EA/L and self-weight.");
             float Icm4 = beam.getMomentOfInertia() * 1e8f;
             if (ImGui::DragFloat("I (cm\xe2\x81\xb4)", &Icm4, 0.001f, 1e-6f, 1e6f, "%.6f")) {
                 pushSnapshot(nodes, beams);
                 beam.setMomentOfInertia(Icm4 * 1e-8f);
             }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Second moment of area (cm\xe2\x81\xb4).\n"
+                                  "Governs bending stiffness EI — only used in frame mode.");
         }
         ImGui::Spacing();
 
@@ -948,6 +998,10 @@ void UIHandler::renderUI(SDL_Window* window,
             ImGui::TextDisabled("Stiffness: %.2e N/m", static_cast<double>(beam.getStiffness(nodes)));
         else
             ImGui::Text("AE/L: %.3e N/m", static_cast<double>(beam.getStiffness(nodes)));
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(beginnerMode
+                ? "How stiff this member is — higher means less stretch under the same load."
+                : "Axial stiffness AE/L (N/m). Determines elongation under axial load.");
 
         // Member-end releases (internal hinges) — frame mode only. A released
         // end transmits force but no bending moment, turning a rigid connection
@@ -1014,6 +1068,92 @@ void UIHandler::renderUI(SDL_Window* window,
     // ── Component palette (left, icon-based; toggled from the View menu) ────────
     if (showPalette)
         renderPalette(menuH, (float)h - menuH - 24.0f, nodes, beams);
+
+    // ── Example Structures card popup ─────────────────────────────────────────
+    if (m_showTemplatesDlg) {
+        ImGui::OpenPopup("Example Structures##cards");
+        m_showTemplatesDlg = false;
+    }
+    ImGui::SetNextWindowSize(ImVec2(480, 0), ImGuiCond_Always);
+    if (ImGui::BeginPopupModal("Example Structures##cards", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextColored({0.55f,0.85f,1.0f,1.0f},
+                           "Click a card to load the example — your current model will be replaced.");
+        ImGui::Spacing();
+
+        struct TplCard {
+            const char* icon;
+            const char* title;
+            const char* line1;
+            const char* line2;
+            int         idx;
+        };
+        static const TplCard cards[] = {
+            { ICON_FA_RULER,
+              "Simple Beam",
+              "Horizontal beam on two supports with a 10 kN midpoint load.",
+              "Shows reactions and midspan deflection — the classic first example.",
+              0 },
+            { ICON_FA_DRAW_POLYGON,
+              "Triangle Truss",
+              "Two fixed bases with a 50 kN downward load at the free apex.",
+              "Demonstrates tension in one member and compression in the other.",
+              1 },
+            { ICON_FA_HOUSE,
+              "Portal Frame",
+              "Two fixed-base columns joined by a beam, with a 20 kN side load.",
+              "Switch to Frame mode to see the bending moment diagram.",
+              2 },
+            { ICON_FA_WRENCH,
+              "Cantilever",
+              "Fixed wall at left, free tip at right, with a 5 kN tip load.",
+              "Produces a triangular moment diagram — great for checking EI.",
+              3 },
+        };
+
+        for (const auto& c : cards) {
+            // Card background
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.13f, 0.15f, 0.20f, 1.0f));
+            ImGui::BeginChild(c.title, ImVec2(-1, 72), true,
+                              ImGuiWindowFlags_NoScrollbar);
+
+            // Icon column
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
+            ImGui::TextColored({0.55f,0.85f,1.0f,1.0f}, "%s", c.icon);
+            ImGui::SameLine(50.0f);
+
+            // Text column
+            float textX = ImGui::GetCursorPosX();
+            ImGui::BeginGroup();
+            ImGui::TextColored({0.95f,0.95f,0.95f,1.0f}, "%s", c.title);
+            ImGui::SetCursorPosX(textX);
+            ImGui::TextDisabled("%s", c.line1);
+            ImGui::SetCursorPosX(textX);
+            ImGui::TextDisabled("%s", c.line2);
+            ImGui::EndGroup();
+
+            // Load button (right-aligned)
+            float btnW = 68.0f;
+            ImGui::SameLine(ImGui::GetWindowWidth() - btnW - 8.0f);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 36.0f);
+            char btnId[32]; std::snprintf(btnId, sizeof btnId, "Load##%d", c.idx);
+            ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.15f,0.50f,0.90f,1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f,0.60f,1.00f,1.0f));
+            if (ImGui::Button(btnId, ImVec2(btnW, 28))) {
+                m_templateIdx = c.idx;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopStyleColor(2);
+
+            ImGui::EndChild();
+            ImGui::PopStyleColor();
+            ImGui::Spacing();
+        }
+
+        ImGui::Spacing();
+        if (ImGui::Button("Close", ImVec2(-1, 0))) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
 
     // ── File open/save popups (modal text-input dialogs) ───────────────────────
     if (m_showOpenDlg) { ImGui::OpenPopup("Open File##dlg"); m_showOpenDlg = false; }
