@@ -443,6 +443,18 @@ int main(int /*argc*/, char* /*argv*/[]) {
     bool running   = true;
     bool rmb       = false;
 
+    // Re-solve the active model. The simulators are kept alive across edits and
+    // cache their factorisation, so a load-only change re-solves without re-
+    // assembling or re-factorising; a geometry change transparently re-factorises.
+    auto resolve = [&]() {
+        lastSolveResult = physics.solveStaticForces();
+        if (ui.getUseFrameMode()) {
+            frameSim.setDistributedLoads(distLoads);
+            frameSim.setSelfWeight(selfWeight);
+            lastSolveResult = frameSim.solve();
+        }
+    };
+
     while (running) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
@@ -473,26 +485,13 @@ int main(int /*argc*/, char* /*argv*/[]) {
             if (!io.WantCaptureKeyboard && e.type == SDL_KEYDOWN) {
                 const bool ctrl  = (e.key.keysym.mod & KMOD_CTRL)  != 0;
                 const bool shift = (e.key.keysym.mod & KMOD_SHIFT) != 0;
-                if (e.key.keysym.sym == SDLK_RETURN) {
-                    physics = Simulator(nodes, beams);
-                    lastSolveResult = physics.solveStaticForces();
-                    if (ui.getUseFrameMode()) { frameSim = FrameSimulator(nodes, beams); frameSim.setDistributedLoads(distLoads); frameSim.setSelfWeight(selfWeight); lastSolveResult = frameSim.solve(); }
-                }
+                if (e.key.keysym.sym == SDLK_RETURN) resolve();
                 // Undo/redo are handled by UIHandler; mirror Escape→clear tool
                 (void)ctrl; (void)shift;
             }
         }
 
-        if (ui.consumeNeedsSolve()) {
-            physics = Simulator(nodes, beams);
-            lastSolveResult = physics.solveStaticForces();
-            if (ui.getUseFrameMode()) {
-                frameSim = FrameSimulator(nodes, beams);
-                frameSim.setDistributedLoads(distLoads);
-                frameSim.setSelfWeight(selfWeight);
-                lastSolveResult = frameSim.solve();
-            }
-        }
+        if (ui.consumeNeedsSolve()) resolve();
 
         int w, h;
         SDL_GetWindowSize(window, &w, &h);
@@ -575,12 +574,8 @@ int main(int /*argc*/, char* /*argv*/[]) {
         else         renderReactionsPanel(nodes, physics);
         renderModelCheckPanel(nodes, beams, frameOn, &lastSolveResult);
         if (frameOn) {
-            if (renderLoadsPanel(distLoads, selfWeight, frameSim, beams)) {
-                frameSim = FrameSimulator(nodes, beams);
-                frameSim.setDistributedLoads(distLoads);
-                frameSim.setSelfWeight(selfWeight);
-                lastSolveResult = frameSim.solve();
-            }
+            if (renderLoadsPanel(distLoads, selfWeight, frameSim, beams))
+                resolve();
             if (ui.getShowDiagram())
                 renderDiagramPanel(nodes, beams, frameSim, ui.getDiagramType());
         }
@@ -598,8 +593,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
             if (ui.consumeLoadRequest(path)) {
                 ui.pushSnapshot(nodes, beams);
                 CSVHandler::loadStructure(path, nodes, beams);
-                physics = Simulator(nodes, beams); lastSolveResult = physics.solveStaticForces();
-                if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); frameSim.setSelfWeight(selfWeight); lastSolveResult = frameSim.solve(); }
+                resolve();
                 // Focus camera on the loaded structure.
                 if (!nodes.empty()) {
                     glm::vec3 mn=nodes[0].getPosition(), mx=mn;
@@ -615,8 +609,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
                 ui.pushSnapshot(nodes, beams);
                 loadTemplate(tpl, nodes, beams);
                 distLoads.clear();
-                physics = Simulator(nodes, beams); lastSolveResult = physics.solveStaticForces();
-                if (frameOn) { frameSim=FrameSimulator(nodes,beams); frameSim.setDistributedLoads(distLoads); frameSim.setSelfWeight(selfWeight); lastSolveResult = frameSim.solve(); }
+                resolve();
                 // Reset camera to frame all template nodes.
                 if (!nodes.empty()) {
                     glm::vec3 mn=nodes[0].getPosition(), mx=mn;

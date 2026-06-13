@@ -5,6 +5,23 @@
 #include "physics/FrameElement.hpp"
 #include <Eigen/SparseLU>
 #include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <functional>
+
+// Fold a value into a running hash (FNV-ish mix). Doubles are hashed by their
+// exact bit pattern so any geometry/section change flips the signature.
+namespace {
+inline void hashMix(std::size_t& h, std::uint64_t v) {
+    h ^= std::hash<std::uint64_t>{}(v) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+}
+inline void hashMix(std::size_t& h, double v) {
+    std::uint64_t b; std::memcpy(&b, &v, sizeof b); hashMix(h, b);
+}
+inline void hashMix(std::size_t& h, int v) {
+    hashMix(h, static_cast<std::uint64_t>(static_cast<std::uint32_t>(v)));
+}
+} // namespace
 
 FrameSimulator::FrameSimulator(std::vector<Node>& nodes, std::vector<Beam>& beams)
     : m_nodes(&nodes), m_beams(&beams) {
@@ -108,65 +125,118 @@ void FrameSimulator::assemble() {
     m_K.setFromTriplets(triplets.begin(), triplets.end());
 }
 
+// stiffnessSignature
+// Purpose: hash the data that determines KFF and the free-DOF set so an
+//          unchanged structure (only the loads differ) can reuse the cached
+//          factorisation. Loads (nodal moments, distributed, self-weight) are
+//          deliberately excluded — changing them must not force a re-factorise.
+std::size_t FrameSimulator::stiffnessSignature() const {
+    std::size_t h = 1469598103934665603ULL;
+    hashMix(h, static_cast<int>(m_nodes->size()));
+    for (const Node& nd : *m_nodes) {
+        glm::vec3 p = nd.getPosition();
+        hashMix(h, static_cast<double>(p.x));
+        hashMix(h, static_cast<double>(p.y));
+        hashMix(h, static_cast<double>(p.z));
+        hashMix(h, static_cast<int>(nd.getJointType()));
+    }
+    for (const Beam& b : *m_beams) {
+        hashMix(h, b.getStartIdx());
+        hashMix(h, b.getEndIdx());
+        hashMix(h, static_cast<double>(b.getYoungsModulus()));
+        hashMix(h, static_cast<double>(b.getCrossSection()));
+        hashMix(h, static_cast<double>(b.getMomentOfInertia()));
+        hashMix(h, b.getStartMomentRelease() ? 1 : 0);
+        hashMix(h, b.getEndMomentRelease()   ? 1 : 0);
+    }
+    return h;
+}
+
+// The factorisation of KFF and the free-DOF map are cached and reused while the
+// stiffness signature is unchanged, so editing a load re-solves with only a
+// fresh back-substitution. Both paths produce identical displacements/reactions.
 SolveResult FrameSimulator::solve() {
     m_reactions.setZero();
-    if (m_nodes->empty()) return {};
-    if (m_beams->empty()) { m_u.setZero(); return {}; }
+    if (m_nodes->empty()) { m_factorized = false; return {}; }
+
+    const int nNodes = static_cast<int>(m_nodes->size());
+    const int n = DPN * nNodes;
+    // Re-size working storage if the node count changed since construction; this
+    // lets the simulator outlive model edits without being reconstructed.
+    if (static_cast<int>(m_F.size()) != n) {
+        m_K.resize(n, n);
+        m_F.resize(n);
+        m_u.resize(n);
+        m_reactions.resize(n);
+        m_reactions.setZero();
+        m_factorized = false;
+    }
+    if (m_beams->empty()) { m_u.setZero(); m_factorized = false; return {}; }
 
     populateForces();
-    assemble();
 
-    const int n = static_cast<int>(m_K.rows());
+    const std::size_t sig = stiffnessSignature();
+    const bool reuse = m_factorized && sig == m_stiffnessSig;
 
-    // Fixed DOFs from joint types, plus any DOF with no stiffness (auto-pin).
-    std::vector<bool> fixed(n, false);
-    for (int i = 0; i < static_cast<int>(m_nodes->size()); ++i)
-        for (int d = 0; d < DPN; ++d)
-            if (isDofConstrained((*m_nodes)[i], d))
-                fixed[DPN*i + d] = true;
-    for (int i = 0; i < n; ++i)
-        if (!fixed[i] && std::abs(m_K.coeff(i,i)) < 1e-14)
-            fixed[i] = true;
+    if (!reuse) {
+        assemble();
 
-    // Free-DOF index map.
-    std::vector<int> freeList;
-    std::vector<int> toFree(n, -1);
-    for (int i = 0; i < n; ++i)
-        if (!fixed[i]) { toFree[i] = static_cast<int>(freeList.size()); freeList.push_back(i); }
-    const int nf = static_cast<int>(freeList.size());
+        // Fixed DOFs from joint types, plus any DOF with no stiffness (auto-pin).
+        std::vector<bool> fixed(n, false);
+        for (int i = 0; i < nNodes; ++i)
+            for (int d = 0; d < DPN; ++d)
+                if (isDofConstrained((*m_nodes)[i], d))
+                    fixed[DPN*i + d] = true;
+        for (int i = 0; i < n; ++i)
+            if (!fixed[i] && std::abs(m_K.coeff(i,i)) < 1e-14)
+                fixed[i] = true;
+
+        // Free-DOF index map (cached for reuse).
+        m_freeList.clear();
+        m_toFree.assign(n, -1);
+        for (int i = 0; i < n; ++i)
+            if (!fixed[i]) { m_toFree[i] = static_cast<int>(m_freeList.size()); m_freeList.push_back(i); }
+        const int nf = static_cast<int>(m_freeList.size());
+
+        if (nf > 0) {
+            std::vector<Eigen::Triplet<double>> sub;
+            sub.reserve(nf * 12);
+            for (int gCol : m_freeList) {
+                int lCol = m_toFree[gCol];
+                for (Eigen::SparseMatrix<double>::InnerIterator it(m_K, gCol); it; ++it) {
+                    int gRow = static_cast<int>(it.row());
+                    if (fixed[gRow]) continue;
+                    sub.emplace_back(m_toFree[gRow], lCol, it.value());
+                }
+            }
+            Eigen::SparseMatrix<double> Kff(nf, nf);
+            Kff.setFromTriplets(sub.begin(), sub.end());
+            Kff.makeCompressed();
+            m_solver.compute(Kff);
+            if (m_solver.info() != Eigen::Success) {
+                m_factorized = false;
+                return {SolveStatus::MECHANISM,
+                        "Structure is a mechanism or under-constrained \xe2\x80\x94 add supports."};
+            }
+        }
+        m_factorized   = true;
+        m_stiffnessSig = sig;
+    }
+
+    const int nf = static_cast<int>(m_freeList.size());
     m_u.setZero();
     if (nf == 0) { m_reactions = m_K * m_u - m_F; return {}; }
 
-    // Extract KFF and fF.
-    std::vector<Eigen::Triplet<double>> sub;
-    sub.reserve(nf * 12);
-    for (int gCol : freeList) {
-        int lCol = toFree[gCol];
-        for (Eigen::SparseMatrix<double>::InnerIterator it(m_K, gCol); it; ++it) {
-            int gRow = static_cast<int>(it.row());
-            if (fixed[gRow]) continue;
-            sub.emplace_back(toFree[gRow], lCol, it.value());
-        }
-    }
-    Eigen::SparseMatrix<double> Kff(nf, nf);
-    Kff.setFromTriplets(sub.begin(), sub.end());
-    Kff.makeCompressed();
-
     Eigen::VectorXd fF(nf);
-    for (int li = 0; li < nf; ++li) fF[li] = m_F[freeList[li]];
+    for (int li = 0; li < nf; ++li) fF[li] = m_F[m_freeList[li]];
 
-    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-    solver.compute(Kff);
-    if (solver.info() != Eigen::Success) {
-        return {SolveStatus::MECHANISM,
-                "Structure is a mechanism or under-constrained \xe2\x80\x94 add supports."};
-    }
-    Eigen::VectorXd uF = solver.solve(fF);
-    if (solver.info() != Eigen::Success) {
+    Eigen::VectorXd uF = m_solver.solve(fF);
+    if (m_solver.info() != Eigen::Success) {
+        m_factorized = false;
         return {SolveStatus::FAILED,
                 "Solver failed \xe2\x80\x94 check model for singularities."};
     }
-    for (int li = 0; li < nf; ++li) m_u[freeList[li]] = uF[li];
+    for (int li = 0; li < nf; ++li) m_u[m_freeList[li]] = uF[li];
 
     m_reactions = m_K * m_u - m_F; // residual: reactions at constrained DOFs
     return {};

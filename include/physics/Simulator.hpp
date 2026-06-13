@@ -2,6 +2,8 @@
 // Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #pragma once
 #include <Eigen/Sparse>
+#include <Eigen/SparseLU>
+#include <cstddef>
 #include <glm/glm.hpp>
 #include <vector>
 #include "../model/Node.hpp"
@@ -34,10 +36,24 @@ private:
     void applySupportConstraints();
     void populateForceVector();
 
+    // Hash of everything that determines the stiffness matrix (node positions,
+    // joint types/BCs, beam connectivity and AE). When this is unchanged between
+    // solves only the load vector differs, so the cached factorisation is reused.
+    std::size_t stiffnessSignature() const;
+
     std::vector<Node>* m_nodes;
     std::vector<Beam>* m_beams;
     Eigen::SparseMatrix<double> m_globalK;
     Eigen::VectorXd m_forces;
     Eigen::VectorXd m_displacements;
     Eigen::VectorXd m_reactions; // r = K*u - F, cached after solve
+
+    // ── Cached factorisation (reused when the stiffness matrix is unchanged) ──
+    // Editing a load re-solves with a fresh RHS but no re-factorisation, keeping
+    // large models interactive. Invalidated whenever the signature changes.
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> m_solver;
+    bool             m_factorized   = false;
+    std::size_t      m_stiffnessSig = 0;
+    std::vector<int> m_freeList;      // free-DOF local index -> global DOF
+    std::vector<int> m_globalToFree;  // global DOF -> local free index, or -1
 };

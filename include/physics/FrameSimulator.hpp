@@ -2,6 +2,8 @@
 // Proprietary — see LICENSE for terms. Unauthorised use prohibited.
 #pragma once
 #include <Eigen/Sparse>
+#include <Eigen/SparseLU>
+#include <cstddef>
 #include <glm/glm.hpp>
 #include <array>
 #include <vector>
@@ -59,6 +61,11 @@ private:
     bool isDofConstrained(const Node& nd, int dof) const; // dof 0..5
     int  beamIndex(const Beam& beam) const;               // index of beam in m_beams, or -1
 
+    // Hash of everything that determines the stiffness matrix and the free-DOF
+    // set (node positions, joint types, beam connectivity/E/A/I, end releases).
+    // An unchanged signature ⇒ the cached factorisation can be reused.
+    std::size_t stiffnessSignature() const;
+
     // User loads plus, when self-weight is on, the per-member self-weight UDLs.
     // This is the single load list the solver and diagram recovery both read.
     std::vector<DistributedLoad> effectiveLoads() const;
@@ -71,4 +78,13 @@ private:
     Eigen::VectorXd m_F;
     Eigen::VectorXd m_u;
     Eigen::VectorXd m_reactions; // r = K*u - F
+
+    // ── Cached factorisation (reused when the stiffness matrix is unchanged) ──
+    // Changing only a load (nodal moment, distributed load, self-weight) re-solves
+    // with a fresh RHS but no re-factorisation. Invalidated when the signature changes.
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> m_solver;
+    bool             m_factorized   = false;
+    std::size_t      m_stiffnessSig = 0;
+    std::vector<int> m_freeList;  // free-DOF local index -> global DOF
+    std::vector<int> m_toFree;    // global DOF -> local free index, or -1
 };
