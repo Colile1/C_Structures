@@ -67,6 +67,7 @@ if(BUILD_APP)
         src/visualization/ForceRenderer.cpp
         src/graphics/Camera.cpp
         src/graphics/IconLibrary.cpp
+        src/export/Exporter.cpp
     )
 
     target_include_directories(C_Structures PRIVATE

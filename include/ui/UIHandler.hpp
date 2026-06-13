@@ -66,6 +66,8 @@ public:
         return false;
     }
     bool      consumeScreenshot() { bool v = m_wantScreenshot; m_wantScreenshot = false; return v; }
+    bool      consumePNGRequest()  { bool v = m_wantPNG;        m_wantPNG  = false; return v; }
+    bool      consumePDFRequest()  { bool v = m_wantPDF;        m_wantPDF  = false; return v; }
     // Template load: returns index 0-3 (simple beam / triangle / portal / cantilever), or -1.
     int       consumeTemplateRequest() { int v = m_templateIdx; m_templateIdx = -1; return v; }
     bool consumeNeedsSolve() { bool v = needsSolveFlag; needsSolveFlag = false; return v; }
@@ -107,6 +109,8 @@ private:
     std::string m_pendingLoad;
     std::string m_pendingSave;
     bool        m_wantScreenshot = false;
+    bool        m_wantPNG       = false;
+    bool        m_wantPDF       = false;
     int         m_templateIdx   = -1;  // 0=SimpleBeam 1=Triangle 2=Portal 3=Cantilever
     // File-dialog state
     char        m_pathBuf[512]  = {};

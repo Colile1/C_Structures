@@ -327,6 +327,8 @@ void UIHandler::handleEvent(SDL_Event& e,
             case SDLK_F12: m_wantScreenshot = true; break;
             case SDLK_o: if (ctrl) m_showOpenDlg = true; break;
             case SDLK_s: if (ctrl) m_showSaveDlg = true; break;
+            case SDLK_i: if (ctrl) m_wantPNG = true; break;
+            case SDLK_e: if (ctrl) m_wantPDF = true; break;
 
             // ── Delete selected ──────────────────────────────────────────────
             case SDLK_DELETE:
@@ -526,6 +528,15 @@ void UIHandler::renderUI(SDL_Window* window,
             if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save...",   "Ctrl+S")) m_showSaveDlg = true;
             ImGui::Separator();
             if (ImGui::MenuItem(ICON_FA_CAMERA "  Export Screenshot", "F12")) m_wantScreenshot = true;
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Save the current view as a BMP file.");
+            if (ImGui::MenuItem(ICON_FA_FILE_IMAGE "  Export PNG Image", "Ctrl+I")) m_wantPNG = true;
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Save the current view as a PNG file.");
+            if (ImGui::MenuItem(ICON_FA_FILE_PDF "  Export PDF Report", "Ctrl+E")) m_wantPDF = true;
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Save a one-page PDF with model summary, reactions,\n"
+                                  "member forces, and a viewport screenshot.");
             ImGui::Separator();
             if (ImGui::MenuItem(ICON_FA_TABLE "  Example Structures..."))
                 m_showTemplatesDlg = true;

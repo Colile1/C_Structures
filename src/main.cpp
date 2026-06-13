@@ -32,6 +32,7 @@
 #include "../include/ui/UIHandler.hpp"
 #include "../include/graphics/Shader.hpp"
 #include "../include/graphics/Camera.hpp"
+#include "../include/export/Exporter.hpp"
 #include <ctime>
 
 static const int WIN_W = 1280;
@@ -643,8 +644,60 @@ int main(int /*argc*/, char* /*argv*/[]) {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // Screenshot is captured after ImGui renders (so UI is included).
+        // Screenshot / PNG / PDF are captured after ImGui renders (so UI is visible).
         if (ui.consumeScreenshot()) saveScreenshot(window);
+
+        if (ui.consumePNGRequest()) {
+            auto fname = Export::savePNG(w, h);
+            if (!fname.empty()) std::cout << "PNG saved: " << fname << "\n";
+            else                std::cerr << "PNG export failed\n";
+        }
+
+        if (ui.consumePDFRequest()) {
+            Export::ReportData rep;
+            rep.mode       = frameOn ? "Frame" : "Truss";
+            rep.nodeCount  = static_cast<int>(nodes.size());
+            rep.beamCount  = static_cast<int>(beams.size());
+            // Gather reactions from the appropriate solver.
+            for (int i = 0; i < static_cast<int>(nodes.size()); ++i) {
+                if (nodes[i].getJointType() == JointType::FREE) continue;
+                Export::ReactionRow r{};
+                r.nodeIdx  = i;
+                r.hasFrame = frameOn;
+                if (frameOn) {
+                    auto rf = frameSim.getNodeReactionForce(i);
+                    auto rm = frameSim.getNodeReactionMoment(i);
+                    r.rx=rf.x; r.ry=rf.y; r.rz=rf.z;
+                    r.mx=rm.x; r.my=rm.y; r.mz=rm.z;
+                } else {
+                    auto rf = physics.getNodeReaction(i);
+                    r.rx=rf.x; r.ry=rf.y; r.rz=rf.z;
+                }
+                rep.reactions.push_back(r);
+            }
+            // Gather member forces.
+            for (int i = 0; i < static_cast<int>(beams.size()); ++i) {
+                Export::MemberRow m{};
+                m.memberIdx = i + 1;
+                if (frameOn) {
+                    auto ef  = frameSim.getMemberEndForces(beams[i]);
+                    m.N  = ef[0]; m.Vy = ef[1]; m.Mz = ef[5];
+                } else {
+                    m.N = physics.getBeamForce(beams[i]);
+                }
+                rep.members.push_back(m);
+            }
+            // Equilibrium status.
+            glm::vec3 net{};
+            rep.equilibriumOK = frameOn
+                ? frameSim.checkForceEquilibrium(net)
+                : physics.checkEquilibrium(net);
+            rep.residualMag = glm::length(net);
+
+            auto fname = Export::savePDF(rep, w, h);
+            if (!fname.empty()) std::cout << "PDF saved: " << fname << "\n";
+            else                std::cerr << "PDF export failed\n";
+        }
 
         SDL_GL_SwapWindow(window);
     }
