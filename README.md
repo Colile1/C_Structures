@@ -2,7 +2,7 @@
 
 ## Real-Time 3D Structural Analysis Simulator
 
-C_Structures is an interactive 3D structural analysis tool for engineering students and educators. Build a truss or frame, apply loads and supports, and see reactions, the deformed shape, and axial/shear/moment diagrams — with an optional "show the math" glass-box.
+C_Structures is an interactive 3D structural analysis tool for engineering students and educators. Build a truss or frame, apply loads and supports, and see reactions, the deformed shape, and axial/shear/moment/torsion diagrams — with an optional "show the math" glass-box.
 
 **Author:** Colile Sibanda
 
@@ -33,10 +33,16 @@ C_Structures is an interactive 3D structural analysis tool for engineering stude
 
 - **Truss mode** (`Simulator`, 3 DOF/node): pin-jointed members, axial forces only. The simple teaching case.
 - **Frame mode** (`FrameSimulator`, 6 DOF/node): rigid-jointed members, shear + moment + torsion. Toggled in the UI.
-- Applied loads: point forces, point moments, and distributed (span) loads.
-- Output: support reactions, deformed shape (auto-scaled), axial/shear/moment diagrams, equilibrium check.
+- Applied loads: point forces, point moments, distributed (span) loads (UDL / triangular / moment), and self-weight (ρ·A·g).
+- Member-end releases (internal hinges) for pinned bases and three-hinged frames.
+- Output: support reactions (force + moment) with an equilibrium badge, auto-scaled deformed shape, and annotated axial / shear / moment / torsion diagrams (peak value + location, end values, labelled sign convention).
+- Determinacy check (frame-aware): warns before solving a mechanism; the solver surfaces status messages on screen instead of failing silently.
+- Plain-language layer: tooltips on every control and results read as sentences beside the numbers; structural templates load as one-click cards.
+- Visual icon palette with a symbol / realistic-2D / realistic-3D view toggle.
 - Optional glass-box panel: shows the assembled stiffness matrix and the solve steps.
-- CSV import/export for node coordinates and beam definitions.
+- Shareable output: PNG capture of the view and a one-page PDF report (model summary, reactions, member forces, diagrams).
+- File formats: **CSV** interchange (nodes, beams, supports, nodal moments) and a richer **JSON** project format (also stores distributed loads and view preferences).
+- **WebAssembly build** of the solver core (`wasm/`): the same analysis runs in a browser or under Node with no native install.
 
 ---
 
@@ -52,19 +58,20 @@ C_Structures is an interactive 3D structural analysis tool for engineering stude
 
 ```
 ┌─────────────────────────────────────────────┐
-│                  main.cpp                   │  Orchestration only
-├──────────────┬──────────────────────────────┤
-│  UIHandler   │  Panel suite (ImGui)         │  Input & UI overlay
-├──────────────┴──────────────────────────────┤
-│        ForceRenderer  +  Geometry           │  3D rendering
-├─────────────────────────────────────────────┤
-│    Simulator / FrameSimulator               │  Physics (truss FEM · frame FEM)
-├──────────────────────┬──────────────────────┤
-│    Node / Beam       │    CSVHandler        │  Data model & I/O
-└──────────────────────┴──────────────────────┘
+│                  main.cpp                    │  Orchestration only
+├──────────────┬───────────────────────────────┤
+│  UIHandler   │  Panel suite (ImGui)          │  Input & UI overlay
+├──────────────┴───────────────────────────────┤
+│   ForceRenderer · IconLibrary · Exporter     │  3D rendering, icons, PNG/PDF
+├──────────────────────────────────────────────┤
+│   Simulator / FrameSimulator / FrameElement  │  Physics (truss FEM · frame FEM)
+│   MemberForces · DistributedLoad · Determinacy│  Diagrams · span loads · stability
+├──────────────────────┬───────────────────────┤
+│    Node / Beam       │  CSVHandler · JSONHandler│  Data model & I/O
+└──────────────────────┴───────────────────────┘
 ```
 
-Data flows top-down: UI panels call into the model; solvers read the model; the renderer reads both. No layer calls upward.
+Data flows top-down: UI panels call into the model; solvers read the model; the renderer reads both. No layer calls upward. The `physics/` core is pure and SDL/OpenGL-free, so it is unit-tested headlessly and compiled to WebAssembly (`wasm/`) unchanged.
 
 ---
 
@@ -82,6 +89,16 @@ ctest --test-dir build --output-on-failure
 
 See [starter_guide.md](starter_guide.md) and [build_windows.sh](build_windows.sh).
 
+### WebAssembly (solver core)
+
+```bash
+emcmake cmake -S wasm -B build-wasm -DCMAKE_BUILD_TYPE=Release
+cmake --build build-wasm
+node wasm/harness.mjs build-wasm/solver_core.js   # checks vs native results
+```
+
+Requires the [Emscripten SDK](https://emscripten.org/). See [wasm/README.md](wasm/README.md) for the JS API.
+
 ---
 
 ## Key Classes / APIs
@@ -90,43 +107,54 @@ See [starter_guide.md](starter_guide.md) and [build_windows.sh](build_windows.sh
 
 ```cpp
 Simulator sim(nodes, beams);
-SolveResult result = sim.solve();          // SparseLU; returns status + displacements
-float force = sim.getBeamForce(beamIdx);   // positive = tension
-glm::vec3 disp = sim.getNodeDisplacement(nodeIdx);
+SolveResult result = sim.solveStaticForces();   // SparseLU; returns status + message
+auto disp = sim.getNodeDisplacements();         // std::vector<glm::vec3>
+float force = sim.getBeamForce(beams[i]);        // positive = tension
+glm::vec3 r = sim.getNodeReaction(nodeIdx);      // support reaction
 ```
 
 ### `FrameSimulator` — frame solver (6 DOF/node)
 
 ```cpp
-FrameSimulator fsim(nodes, beams, distributedLoads);
-SolveResult result = fsim.solve();         // SparseLU + static condensation
+FrameSimulator fsim(nodes, beams);
+fsim.setDistributedLoads(loads);                 // UDL / triangular / moment
+fsim.setSelfWeight(true);                        // optional ρ·A·g UDL per member
+SolveResult result = fsim.solve();               // SparseLU + static condensation
+auto t = fsim.getNodeTranslations();             // per-node translation (m)
+auto rot = fsim.getNodeRotations();              // per-node rotation (rad)
+std::array<float,12> p = fsim.getMemberEndForces(beams[i]);
 ```
 
 ### `Node`
 
 ```cpp
-Node n(glm::vec3 pos, JointType type);
+Node n(x, y, z);                 // floats
+n.setJointType(JointType::PIN_XY);
 n.applyForce(glm::vec3 f);
-n.applyMoment(glm::vec3 m);
+n.applyMoment(glm::vec3 m);       // acted on by the frame solver only
 ```
 
 ### `Beam`
 
 ```cpp
-Beam b(int startIdx, int endIdx, double E, double A, double I);
+Beam b(startIdx, endIdx, E, A);   // legacy E/A ctor; or (startIdx,endIdx,material,A,I)
+b.setMomentOfInertia(I);
+b.setStartMomentRelease(true);    // internal hinge (frame)
 // Indices into the node vector — never raw pointers.
 ```
 
-### `CSVHandler`
+### `CSVHandler` / `JSONHandler`
 
 ```cpp
 CSVHandler::loadStructure("model.csv", nodes, beams);
 CSVHandler::saveStructure("model.csv", nodes, beams);
+JSONHandler::saveProject("project.json", nodes, beams, distLoads, prefs);
+JSONHandler::loadProject("project.json", nodes, beams, distLoads, prefs);
 ```
 
-CSV format:
+CSV format (the trailing moment columns are optional; older files omit them):
 ```
-NODE x y z fixed
+NODE x y z joint [mx my mz]      # joint: 0=FREE 1=FIXED 2=PIN_XY 3=ROLLER_X 4=ROLLER_Y 5=ROLLER_Z
 BEAM startIdx endIdx E A
 ```
 
@@ -180,6 +208,6 @@ C_Structures bridges the gap between theoretical textbooks and professional tool
 ## Infrastructure
 
 - **Branching:** GitHub Flow — `main` for stable releases, feature branches for development.
-- **CI/CD:** GitHub Actions — headless CMake build + `ctest` on every push.
-- **Distribution:** Linux executable via CMake; Windows build via MinGW (see `build_windows.sh`).
-- **Data:** Predefined structural templates (simple beam, simple truss, portal frame); CSV import/export.
+- **CI/CD:** GitHub Actions — headless CMake build + `ctest` on every push, plus an Emscripten job that builds the solver core to WebAssembly and runs the browser/Node harness.
+- **Distribution:** Linux executable via CMake; Windows build via MinGW (see `build_windows.sh`); WebAssembly solver core for the browser (see `wasm/`).
+- **Data:** Predefined structural templates (simple beam, simple truss, portal frame, cantilever) loaded as cards; CSV interchange and JSON project files; PNG / one-page PDF report export.

@@ -5,6 +5,43 @@ Format: [YYYY-MM-DD HH:MM]
 
 ---
 
+[2026-06-14 12:00]
+**A20 — WebAssembly build of the solver core (build order complete)**
+Why: The final, stretch step of the implementation plan — make the pure solver usable in a browser with no native install, de-risked because the core is already SDL/OpenGL-free and isolated by `BUILD_APP=OFF`.
+Impact:
+- New `wasm/` standalone Emscripten project. `wasm/SolverBindings.cpp` is a thin Embind facade (`Model` class) over the existing `Simulator`, `FrameSimulator`/`FrameElement`, `MemberForces`, and `DistributedLoad` — no physics changes. It owns the node/beam vectors and reuses the solver classes verbatim (they take `std::vector&`).
+- `wasm/CMakeLists.txt` fetches header-only Eigen 3.4.0 + glm 1.0.1 so the wasm build needs no host dev packages and never pulls in SDL/ImGui/GTest. Emits `solver_core.js` + `solver_core.wasm` via `-lembind -sMODULARIZE`, loadable identically from a browser and from Node.
+- JS API exposes builders (nodes/beams/forces/moments/releases/distributed + self-weight loads), `solveTruss()`/`solveFrame()` returning `SolveStatus`, and readback (displacement/rotation/reaction/axial force, plus sampled member-force diagrams). `glm::vec3` is bound as a `Vec3` value object; `JointType`/`LoadType`/`SolveStatus` as enums.
+- `wasm/harness.mjs` (Node, drives CI) and `wasm/harness.html` (browser) run the single-bar truss and tip-loaded cantilever and assert against the closed-form values the native tests use.
+- New `wasm-solver` CI job (setup-emsdk → emcmake build → node harness) guards every push. `wasm/README.md` documents build/run/API. `.gitignore` ignores `build-wasm/`.
+Verification: built locally with emsdk (emcc 6.0.0); the Node harness passes all checks — single-bar elongation `F·L/AE` and member force `F`; cantilever tip `vy=−PL³/3EI`, slope `−PL²/2EI`, base reaction `P` and moment `PL`, and the bending-moment diagram (`PL` at base → 0 at tip) — each within 1e-3 of the closed-form value. Native `ctest` stays 11/11 green (core untouched).
+Note: under wasm32 `size_t` is 32-bit, so the cache-signature FNV hash truncates its 64-bit basis (compile warning only); it drives factorisation-cache reuse and stays deterministic, so results are unaffected.
+
+---
+
+[2026-06-13 20:00]
+**A1–A19 — fix-and-improve build order (the numbered IMPLEMENTATION_PLAN steps)**
+Why: REVIEW.md / GLITCHES_AND_FIX_PLAN.md / IMPROVEMENT_PLAN_2026-06.md were turned into a single numbered, one-step-at-a-time build order in IMPLEMENTATION_PLAN.md. These entries consolidate the work (one commit per step, see `git log`):
+- **A1–A3 (safety net):** re-enabled GitHub Actions CI; CI builds the headless `tests` target only (`BUILD_APP=OFF`, no SDL/GL) and runs `ctest`; purged committed build artifacts and confirmed `build*/` is gitignored.
+- **A4 ⚑:** corrected internal-force diagrams under span loads (UDL gives `M_max=wL²/8` mid-span, `V=0` mid-span).
+- **A5 ⚑:** frame-aware determinacy (`6m+r` vs `6n` in frame mode; mechanism hint on an unsupported frame).
+- **A6:** solver status surfaced in the UI — `solve()` returns status+message; an under-constrained model shows "mechanism — add supports" instead of a silent no-op (`SolverStatusTests`).
+- **A7:** auto-scaled deformed shape with an on-screen "×N" factor (replaces the fixed `dispScale=50`).
+- **A8–A9 (honesty/hygiene):** reconciled README/architecture (SparseLU, frame/truss, Dear ImGui; dropped the REST/Trello fiction); removed `RendererUtils`, deleted the stale test stub, added a README to each component folder.
+- **A10 ⚑:** concentrated nodal moments (`applyMoment`, frame moment DOFs, CSV round-trip; cantilever tip-moment `θ=ML/EI`).
+- **A11 ⚑:** self-weight load (density per material, `ρ·A·g` UDL; frame equilibrium accounts for span loads).
+- **A12 ⚑:** internal hinges / member-end releases (three-hinged portal matches textbook reactions).
+- **A13:** diagram annotations — peak value+location, end values, quantity switch (N/Vy/Vz/T/My/Mz), on-screen sign convention.
+- **A14:** frame-aware reactions table with moment columns and a "ΣF≈0 ✓" equilibrium badge.
+- **A15:** cache the solver factorisation and reuse it on load-only changes (kept-alive simulators) so large models stay interactive.
+- **A16:** visual icon palette with a symbol / realistic-2D / realistic-3D view toggle, SVGs rasterised via vendored nanosvg.
+- **A17:** plain-language layer (tooltip coverage, sentence results) and templates as one-click cards.
+- **A18:** shareable output — PNG capture and a one-page PDF report with an embedded viewport.
+- **A19:** JSON project format (round-trips nodes, beams, distributed loads, and view prefs); CSV remains the interchange format.
+Verification: each step has an objective "done when" in IMPLEMENTATION_PLAN.md §2 and its own tests where correctness-critical; full suite is 11 ctest suites, all green.
+
+---
+
 [2026-05-31 08:00]
 **UI fixes — icons, support quick-set, template camera framing; 8/8 tests passing**
 Three issues fixed:

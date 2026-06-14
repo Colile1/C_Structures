@@ -2,10 +2,12 @@
 
 ## What This Project Does
 
-C_Structures is a real-time 3D structural analysis simulator. You can build a truss-like structure by placing nodes and connecting them with beams, apply forces to free nodes, then run a static force solver (finite-element method, direct stiffness) to see displacements and beam stress coloured in real time.
+C_Structures is a real-time 3D structural analysis simulator. You place nodes, connect them with beams, apply loads and supports, then run a static finite-element (direct stiffness) solver to see displacements, reactions, and internal forces coloured in real time. Two solvers run side by side: a pin-jointed **truss** (3 DOF/node, axial only) and a rigid-jointed **frame** (6 DOF/node, shear + moment + torsion), switched with a UI toggle.
 
 **Blue beams** = tension. **Red beams** = compression. **Gray beams** = near-zero force.
 **Red spheres** = fixed supports. **White spheres** = free nodes.
+
+In frame mode you also get annotated axial/shear/moment/torsion diagrams, a reactions table with an equilibrium badge, distributed and self-weight loads, and internal hinges. Models save to CSV (interchange) or JSON (full project), and export to PNG / a one-page PDF report. The pure solver core also builds to WebAssembly (see [wasm/README.md](wasm/README.md)).
 
 ---
 
@@ -89,6 +91,21 @@ cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
 ninja -j$(nproc)
 ```
 
+### WebAssembly (solver core only — runs in a browser / Node)
+
+Install and activate the [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
+so `emcc` / `emcmake` are on PATH (`source ./emsdk/emsdk_env.sh`, or `.\emsdk\emsdk_env.ps1`
+in PowerShell), then from the project root:
+
+```bash
+emcmake cmake -S wasm -B build-wasm -DCMAKE_BUILD_TYPE=Release
+cmake --build build-wasm
+node wasm/harness.mjs build-wasm/solver_core.js   # asserts vs native/closed-form
+```
+
+This needs no SDL/OpenGL and no host Eigen/glm — the wasm project fetches them. See
+[wasm/README.md](wasm/README.md) for the JavaScript API and the in-browser `harness.html`.
+
 ---
 
 ## Running the Application
@@ -140,8 +157,10 @@ ctest --test-dir build_win --output-on-failure
 cmake --build build && ctest --test-dir build --output-on-failure
 ```
 
-Expected output: **100% tests passed, 0 tests failed out of 4** (22 individual tests across
-ModelTests, PhysicsTests, CSVTests, IntegrationTests).
+Expected output: **100% tests passed, 0 tests failed out of 11** suites — ModelTests,
+PhysicsTests, CSVTests, IntegrationTests, DeterminacyTests, FrameTests, MemberForcesTests,
+DistributedLoadTests, SolverStatusTests, ResolveCacheTests, JSONHandlerTests. The tests
+build with `-DBUILD_APP=OFF` (no SDL/OpenGL needed); CI runs exactly this.
 
 > **cmake/ctest not found?** Add MSYS2 to your PATH once in PowerShell:
 > ```powershell
@@ -179,9 +198,14 @@ ModelTests, PhysicsTests, CSVTests, IntegrationTests).
 Save and load structures with `CSVHandler`. The format is:
 
 ```
-NODE x y z joint
+NODE x y z joint [mx my mz]
 BEAM startIdx endIdx E A
 ```
+
+The three trailing `NODE` columns are an optional concentrated nodal moment
+(Mx, My, Mz, used by the frame solver); older files omit them and default to zero.
+For loads, view preferences, and distributed loads as well, use the JSON project
+format (`JSONHandler::saveProject` / `loadProject`).
 
 **joint** encodes the support type as an integer:
 
@@ -213,37 +237,37 @@ edits and CSV round-trips exactly.
 
 ```
 C_Structures/
-├── include/
-│   ├── data/           CSVHandler.hpp
-│   ├── graphics/       Shader.hpp, Camera.hpp
-│   ├── model/          Node.hpp, Beam.hpp
-│   ├── physics/        Simulator.hpp
-│   ├── ui/             UIHandler.hpp
-│   └── visualization/  ForceRenderer.hpp
+├── include/            Public headers, mirroring src/ (data, graphics, model,
+│                       physics, ui, visualization, export)
 ├── src/
-│   ├── data/           CSVHandler.cpp
-│   ├── graphics/       Camera.cpp
+│   ├── data/           CSVHandler.cpp, JSONHandler.cpp
+│   ├── graphics/       Camera.cpp, IconLibrary.cpp
 │   ├── model/          Node.cpp, Beam.cpp
-│   ├── physics/        Simulator.cpp
-│   ├── ui/             UIHandler.cpp
-│   ├── visualization/  ForceRenderer.cpp, RendererUtils.cpp
-│   └── main.cpp
+│   ├── physics/        Simulator.cpp, FrameSimulator.cpp, FrameElement.cpp,
+│   │                   MemberForces.cpp, DistributedLoad.cpp, Determinacy.cpp
+│   ├── ui/             UIHandler.cpp + panels (Reactions, ModelCheck, Loads,
+│   │                   Results, Diagram, GlassBox, Templates)
+│   ├── visualization/  ForceRenderer.cpp
+│   ├── export/         Exporter.cpp  (PNG capture + one-page PDF report)
+│   ├── build_meta.cpp
+│   └── main.cpp        Orchestration only
+├── wasm/               WebAssembly build of the solver core (SolverBindings.cpp,
+│                       CMakeLists.txt, harness.mjs, harness.html, README.md)
+├── third_party/        nanosvg/  (vendored SVG rasteriser for the icon palette)
 ├── resources/
 │   ├── icons/          SVG icon library (symbols/, realistic/2d/, realistic/3d/)
 │   └── IconsFontAwesome6.h
-├── tests/
-│   ├── ModelTests.cpp
-│   ├── PhysicsTests.cpp
-│   ├── CSVHandlerTests.cpp
-│   ├── IntegrationTests.cpp
-│   ├── py_logic_tests.py
-│   └── test_main.cpp
-├── build_win/          Windows build output (git-ignored)
-├── build/              Linux build output (git-ignored)
+├── tests/              11 GoogleTest suites (Model, Physics, CSV, JSON,
+│                       Integration, Determinacy, Frame, MemberForces,
+│                       DistributedLoad, SolverStatus, ResolveCache) + py_logic_tests.py
+├── .github/workflows/  ci.yml  (headless ctest + Emscripten wasm harness)
+├── build/, build_win/, build-wasm/   Build output (git-ignored)
 ├── CMakeLists.txt
 ├── build_windows.sh    One-shot Windows build helper
-├── REVIEW.md           Full project audit
-├── IMPROVEMENT_PLAN.md Five-phase improvement roadmap
+├── CLAUDE.md           Project contract / build order
+├── IMPLEMENTATION_PLAN.md   Numbered build order (A1–A20)
+├── GLITCHES_AND_FIX_PLAN.md, IMPROVEMENT_PLAN_2026-06.md, REVIEW.md
+├── architecture.md, README.md
 ├── log.md
 └── starter_guide.md    (this file)
 ```
