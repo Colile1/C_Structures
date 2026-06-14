@@ -32,3 +32,23 @@ jobs:
 
     - name: Test
       run: ctest --test-dir build --output-on-failure -V
+
+  wasm-solver:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Emscripten
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: latest
+
+    - name: Configure (wasm)
+      run: emcmake cmake -S wasm -B build-wasm -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build solver core to WebAssembly
+      run: cmake --build build-wasm --parallel
+
+    - name: Run the wasm harness (matches native results)
+      run: node wasm/harness.mjs build-wasm/solver_core.js

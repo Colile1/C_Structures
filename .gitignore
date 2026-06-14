@@ -4,6 +4,7 @@ build_win/
 build_linux/
 build_mac/
 build_tests/
+build-wasm/
 out/
 
 # ── CMake generated (in-source, legacy) ──────────────────────────
@@ -62,9 +63,13 @@ Thumbs.db
 desktop.ini
 ehthumbs.db
 
+# ── Emscripten SDK (installed locally, not committed) ────────────
+emsdk/
+
 # ── Internal / meta docs (kept local, not published) ─────────────
 .claude/
 .vscode/
+CLAUDE.md
 rules.md
 plan.md
 todo.md

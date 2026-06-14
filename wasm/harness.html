@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Colile Sibanda. All rights reserved. -->
+<!-- wasm/harness.html : in-browser harness for the WebAssembly solver core.
+     Loads solver_core.js, runs the single-bar truss and cantilever frame cases,
+     and shows each check as a PASS/FAIL row with the computed vs expected value.
+     Serve this folder (e.g. `python -m http.server` from build-wasm/, with this
+     file and solver_core.js/.wasm alongside) and open it in a browser. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>C_Structures — WebAssembly solver harness</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; color: #1b1b1b; }
+    h1 { font-size: 1.25rem; }
+    table { border-collapse: collapse; margin-top: 1rem; }
+    th, td { padding: 4px 12px; border-bottom: 1px solid #ddd; text-align: left; }
+    td.num { font-variant-numeric: tabular-nums; text-align: right; }
+    .pass { color: #137333; font-weight: 600; }
+    .fail { color: #c5221f; font-weight: 600; }
+    #summary { margin-top: 1rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>C_Structures — WebAssembly solver core</h1>
+  <p>Runs the native reference cases through the wasm build and checks them
+     against the closed-form values.</p>
+  <table>
+    <thead><tr><th>Result</th><th>Check</th><th>Computed</th><th>Expected</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="summary">Loading…</div>
+
+  <script src="solver_core.js"></script>
+  <script>
+    let failures = 0;
+    function row(name, got, want, relTol = 1e-3, absTol = 1e-9) {
+      const tol = Math.max(Math.abs(want) * relTol, absTol);
+      const ok = Math.abs(got - want) <= tol;
+      if (!ok) failures++;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="${ok ? 'pass' : 'fail'}">${ok ? 'PASS' : 'FAIL'}</td>`
+        + `<td>${name}</td>`
+        + `<td class="num">${got.toExponential(6)}</td>`
+        + `<td class="num">${want.toExponential(6)}</td>`;
+      document.getElementById('rows').appendChild(tr);
+    }
+
+    createSolverModule().then((Module) => {
+      // Case 1: single steel bar in tension (truss).
+      {
+        const E = 200e9, A = 1e-4, L = 2.0, F = 1000.0;
+        const m = new Module.Model();
+        const n0 = m.addNode(0, 0, 0, Module.JointType.FIXED);
+        const n1 = m.addNode(L, 0, 0, Module.JointType.FREE);
+        const b  = m.addBeam(n0, n1, E, A, 8.33e-9);
+        m.applyForce(n1, F, 0, 0);
+        m.solveTruss();
+        row('single-bar elongation u1.x', m.displacement(n1).x, F * L / (A * E));
+        row('single-bar axial force',     m.beamAxialForce(b),  F, 1e-3, 1.0);
+        m.delete();
+      }
+      // Case 2: cantilever with transverse tip load (frame).
+      {
+        const E = 200e9, A = 1e-2, I = 1e-5, L = 2.0, P = 1000.0;
+        const m = new Module.Model();
+        const n0 = m.addNode(0, 0, 0, Module.JointType.FIXED);
+        const n1 = m.addNode(L, 0, 0, Module.JointType.FREE);
+        m.addBeam(n0, n1, E, A, I);
+        m.applyForce(n1, 0, -P, 0);
+        m.solveFrame();
+        row('cantilever tip vy',      m.displacement(n1).y, -P * L * L * L / (3 * E * I));
+        row('cantilever tip slope',   m.rotation(n1).z,     -P * L * L / (2 * E * I));
+        row('cantilever reaction Fy', m.reactionForce(n0).y, P, 1e-3, 1e-1);
+        row('cantilever reaction |Mz|', Math.abs(m.reactionMoment(n0).z), P * L, 1e-3, 1.0);
+        m.delete();
+      }
+      const s = document.getElementById('summary');
+      s.textContent = failures === 0
+        ? 'All wasm solver checks passed.'
+        : `${failures} wasm solver check(s) FAILED.`;
+      s.className = failures === 0 ? 'pass' : 'fail';
+    });
+  </script>
+</body>
+</html>
