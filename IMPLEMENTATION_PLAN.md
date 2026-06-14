@@ -6,6 +6,8 @@ Inputs: `GLITCHES_AND_FIX_PLAN.md` (what's broken) and `IMPROVEMENT_PLAN_2026-06
 
 This plan turns the fix list and the improvement themes into a single **numbered, one-step-at-a-time build order**, each step with an objective "done when". It is meant to be executed by a fresh Claude Code (or solo) session per step, committing one step at a time. Code is written per step — not all at once.
 
+> **Status: all 20 steps (A1–A20) complete as of 2026-06-14.** This document is now the historical spec and rationale; the table below records what was built. New work is a fresh milestone — extend the scope here first.
+
 ---
 
 ## 1. Scope (fixed — do not drift)
@@ -90,9 +92,9 @@ Reverse reminder: if you find yourself on the top tier doing doc edits or `.giti
 
 ---
 
-## 6. First action
+## 6. First action (historical — build order now complete)
 
-Start with **Step 1 (Re-enable CI)** — it is half an hour and makes every subsequent step self-verifying. Suggested first Claude Code prompt:
+The build order was executed in order starting from **Step 1 (Re-enable CI)**, which made every subsequent step self-verifying. Retained for reference; the original first prompt was:
 
 > "Read `IMPLEMENTATION_PLAN.md` and `GLITCHES_AND_FIX_PLAN.md`, then do build step 1: re-enable CI. Confirm the model tier from the policy table first."
 
